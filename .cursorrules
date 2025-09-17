@@ -1,0 +1,731 @@
+# Nest Studio - Cursor Rules for Requirements Compliance
+
+## 🎯 Core Principles
+
+You are an expert developer working on Nest Studio, a visual builder for Next.js + Tailwind + shadcn / ui projects.Every task you implement MUST be validated against the comprehensive requirements specification in `requirements.md`.
+
+## 📋 Mandatory Workflow
+
+### 1. Pre - Implementation Checklist
+Before starting ANY task, you MUST:
+
+-[] Read and understand the specific requirements from`requirements.md`
+    - [] Identify all Functional Requirements(FR - XXX) related to the task
+        - [] Identify all Non - Functional Requirements(NFR - XXX) that apply
+            - [] Identify all Technical Requirements(TR - XXX) that must be met
+                - [] Identify all Performance Requirements(PERF - XXX) that apply
+                    - [] Identify all Security Requirements(SEC - XXX) that apply
+                        - [] Create a requirements validation checklist for the task
+
+### 2. Implementation Phase
+During implementation:
+
+-[] Follow the exact acceptance criteria from requirements.md
+    - [] Implement all specified user stories
+        - [] Ensure all technical specifications are met
+            - [] Follow the defined architecture patterns
+                - [] Maintain performance benchmarks
+                    - [] Implement security measures
+                        - [] Follow accessibility guidelines
+
+### 3. Post - Implementation Validation
+After completing ANY task, you MUST:
+
+-[] Run comprehensive tests using Playwright MCP
+-[] Validate all acceptance criteria are met
+    - [] Check performance requirements
+        - [] Verify security requirements
+            - [] Test accessibility compliance
+                - [] Document any deviations from requirements
+                    - [] Update the requirements compliance status
+
+## 🧪 Testing Requirements
+
+### Mandatory Testing Protocol
+
+#### 1. Unit Testing
+For every component / function implemented:
+    ```typescript
+// Example test structure
+describe('ComponentName', () => {
+  it('should meet FR-XXX requirement', () => {
+    // Test specific functional requirement
+  });
+  
+  it('should meet NFR-XXX requirement', () => {
+    // Test specific non-functional requirement
+  });
+  
+  it('should meet PERF-XXX requirement', () => {
+    // Test performance requirement
+  });
+});
+```
+
+#### 2. Integration Testing
+Use Playwright MCP for end - to - end testing:
+
+    ```typescript
+// Example Playwright test
+test('Project Creation Workflow', async ({ page }) => {
+  // Test FR-001.1: Create New Project
+  await page.goto('/');
+  await page.click('[data-testid="create-project"]');
+  
+  // Validate wizard interface
+  await expect(page.locator('[data-testid="project-wizard"]')).toBeVisible();
+  
+  // Test Next.js version selection
+  await page.selectOption('[data-testid="nextjs-version"]', '15');
+  
+  // Test TypeScript selection
+  await page.check('[data-testid="typescript-enabled"]');
+  
+  // Test App Router selection
+  await page.check('[data-testid="app-router"]');
+  
+  // Test Tailwind CSS configuration
+  await page.check('[data-testid="tailwind-enabled"]');
+  
+  // Test shadcn/ui setup
+  await page.check('[data-testid="shadcn-enabled"]');
+  
+  // Complete project creation
+  await page.click('[data-testid="create-project-btn"]');
+  
+  // Validate project structure creation
+  await expect(page.locator('[data-testid="project-structure"]')).toBeVisible();
+  
+  // Validate package.json generation
+  await expect(page.locator('[data-testid="package-json"]')).toContainText('"next": "^15"');
+  await expect(page.locator('[data-testid="package-json"]')).toContainText('"typescript"');
+  await expect(page.locator('[data-testid="package-json"]')).toContainText('"tailwindcss"');
+});
+```
+
+#### 3. Performance Testing
+    ```typescript
+test('Performance Requirements', async ({ page }) => {
+  const startTime = Date.now();
+  
+  // Test PERF-001: Startup Performance
+  await page.goto('/');
+  const loadTime = Date.now() - startTime;
+  expect(loadTime).toBeLessThan(3000); // < 3 seconds
+  
+  // Test PERF-002: Runtime Performance
+  const interactionStart = Date.now();
+  await page.click('[data-testid="component-library"]');
+  const interactionTime = Date.now() - interactionStart;
+  expect(interactionTime).toBeLessThan(100); // < 100ms
+});
+```
+
+#### 4. Accessibility Testing
+    ```typescript
+test('Accessibility Requirements', async ({ page }) => {
+  await page.goto('/');
+  
+  // Test ACC-001: Keyboard Navigation
+  await page.keyboard.press('Tab');
+  await expect(page.locator(':focus')).toBeVisible();
+  
+  // Test ACC-002: Visual Accessibility
+  const contrast = await page.evaluate(() => {
+    const element = document.querySelector('[data-testid="main-content"]');
+    const styles = window.getComputedStyle(element);
+    return styles.color; // Should meet WCAG AA contrast ratio
+  });
+  
+  // Test ACC-003: Motor Accessibility
+  const clickTarget = await page.locator('[data-testid="action-button"]');
+  const size = await clickTarget.boundingBox();
+  expect(size.width).toBeGreaterThanOrEqual(44); // Minimum 44px
+  expect(size.height).toBeGreaterThanOrEqual(44);
+});
+```
+
+## 🔍 Requirements Validation Framework
+
+### Automated Requirements Checker
+
+Create a requirements validation system that automatically checks:
+
+```typescript
+// requirements-validator.ts
+export class RequirementsValidator {
+  private requirements: Map<string, Requirement> = new Map();
+  
+  async validateTask(taskId: string, implementation: any): Promise<ValidationResult> {
+    const taskRequirements = this.getRequirementsForTask(taskId);
+    const results: ValidationResult[] = [];
+    
+    for (const requirement of taskRequirements) {
+      const result = await this.validateRequirement(requirement, implementation);
+      results.push(result);
+    }
+    
+    return this.aggregateResults(results);
+  }
+  
+  private async validateRequirement(requirement: Requirement, implementation: any): Promise<ValidationResult> {
+    switch (requirement.type) {
+      case 'functional':
+        return await this.validateFunctionalRequirement(requirement, implementation);
+      case 'performance':
+        return await this.validatePerformanceRequirement(requirement, implementation);
+      case 'security':
+        return await this.validateSecurityRequirement(requirement, implementation);
+      case 'accessibility':
+        return await this.validateAccessibilityRequirement(requirement, implementation);
+      default:
+        throw new Error(`Unknown requirement type: ${ requirement.type } `);
+    }
+  }
+}
+```
+
+### Playwright Test Suite for Requirements
+
+    ```typescript
+// tests/requirements.spec.ts
+import { test, expect } from '@playwright/test';
+
+// FR-001: Project Management Tests
+test.describe('Project Management Requirements', () => {
+  test('FR-001.1: Create New Project', async ({ page }) => {
+    await page.goto('/');
+    
+    // Test wizard interface
+    await page.click('[data-testid="create-project"]');
+    await expect(page.locator('[data-testid="project-wizard"]')).toBeVisible();
+    
+    // Test Next.js version selection (13+, 14+, 15+)
+    const versions = ['13', '14', '15'];
+    for (const version of versions) {
+      await page.selectOption('[data-testid="nextjs-version"]', version);
+      await expect(page.locator('[data-testid="nextjs-version"]')).toHaveValue(version);
+    }
+    
+    // Test TypeScript/JavaScript selection
+    await page.check('[data-testid="typescript-enabled"]');
+    await expect(page.locator('[data-testid="typescript-enabled"]')).toBeChecked();
+    
+    await page.uncheck('[data-testid="typescript-enabled"]');
+    await page.check('[data-testid="javascript-enabled"]');
+    await expect(page.locator('[data-testid="javascript-enabled"]')).toBeChecked();
+    
+    // Test App Router vs Pages Router
+    await page.check('[data-testid="app-router"]');
+    await expect(page.locator('[data-testid="app-router"]')).toBeChecked();
+    
+    await page.uncheck('[data-testid="app-router"]');
+    await page.check('[data-testid="pages-router"]');
+    await expect(page.locator('[data-testid="pages-router"]')).toBeChecked();
+    
+    // Test Tailwind CSS configuration
+    await page.check('[data-testid="tailwind-enabled"]');
+    await expect(page.locator('[data-testid="tailwind-enabled"]')).toBeChecked();
+    
+    // Test shadcn/ui setup
+    await page.check('[data-testid="shadcn-enabled"]');
+    await expect(page.locator('[data-testid="shadcn-enabled"]')).toBeChecked();
+    
+    // Test ESLint, Prettier configuration
+    await page.check('[data-testid="eslint-enabled"]');
+    await page.check('[data-testid="prettier-enabled"]');
+    
+    // Complete project creation
+    await page.click('[data-testid="create-project-btn"]');
+    
+    // Validate project structure creation
+    await expect(page.locator('[data-testid="project-structure"]')).toBeVisible();
+    
+    // Validate package.json generation
+    const packageJson = await page.locator('[data-testid="package-json"]').textContent();
+    expect(packageJson).toContain('"next"');
+    expect(packageJson).toContain('"tailwindcss"');
+    expect(packageJson).toContain('"@radix-ui"');
+    
+    // Validate configuration files
+    await expect(page.locator('[data-testid="next-config"]')).toBeVisible();
+    await expect(page.locator('[data-testid="tailwind-config"]')).toBeVisible();
+  });
+  
+  test('FR-001.2: Import Existing Project', async ({ page }) => {
+    await page.goto('/');
+    
+    // Test project import
+    await page.click('[data-testid="import-project"]');
+    await expect(page.locator('[data-testid="import-dialog"]')).toBeVisible();
+    
+    // Test directory selection
+    await page.click('[data-testid="browse-directory"]');
+    // Note: In real implementation, this would open file dialog
+    
+    // Test auto-detection process
+    await page.fill('[data-testid="project-path"]', '/path/to/nextjs-project');
+    await page.click('[data-testid="detect-project"]');
+    
+    // Validate Next.js version detection
+    await expect(page.locator('[data-testid="detected-nextjs-version"]')).toBeVisible();
+    
+    // Validate App Router vs Pages Router detection
+    await expect(page.locator('[data-testid="detected-router-type"]')).toBeVisible();
+    
+    // Validate package.json analysis
+    await expect(page.locator('[data-testid="detected-dependencies"]')).toBeVisible();
+    
+    // Validate configuration file import
+    await expect(page.locator('[data-testid="imported-next-config"]')).toBeVisible();
+    await expect(page.locator('[data-testid="imported-tailwind-config"]')).toBeVisible();
+    
+    // Validate shadcn/ui component detection
+    await expect(page.locator('[data-testid="detected-shadcn-components"]')).toBeVisible();
+    
+    // Complete import
+    await page.click('[data-testid="import-project-btn"]');
+    
+    // Validate project loaded
+    await expect(page.locator('[data-testid="project-loaded"]')).toBeVisible();
+  });
+});
+
+// FR-002: Visual Editor Tests
+test.describe('Visual Editor Requirements', () => {
+  test('FR-002.1: Component Library Browser', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Test component library display
+    await expect(page.locator('[data-testid="component-library"]')).toBeVisible();
+    
+    // Test shadcn/ui component catalog
+    await expect(page.locator('[data-testid="shadcn-components"]')).toBeVisible();
+    
+    // Test search and filter
+    await page.fill('[data-testid="component-search"]', 'button');
+    await expect(page.locator('[data-testid="component-results"]')).toContainText('Button');
+    
+    // Test component preview
+    await page.hover('[data-testid="component-button"]');
+    await expect(page.locator('[data-testid="component-preview"]')).toBeVisible();
+    
+    // Test component variants
+    await page.click('[data-testid="component-button"]');
+    await expect(page.locator('[data-testid="component-variants"]')).toBeVisible();
+    
+    // Test component documentation
+    await page.click('[data-testid="component-docs"]');
+    await expect(page.locator('[data-testid="component-documentation"]')).toBeVisible();
+  });
+  
+  test('FR-002.2: Drag and Drop Interface', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Test drag from library to canvas
+    const component = page.locator('[data-testid="component-button"]');
+    const canvas = page.locator('[data-testid="canvas"]');
+    
+    await component.dragTo(canvas);
+    
+    // Validate component dropped
+    await expect(canvas.locator('[data-testid="dropped-component"]')).toBeVisible();
+    
+    // Test resize handles
+    const resizeHandle = canvas.locator('[data-testid="resize-handle"]');
+    await expect(resizeHandle).toBeVisible();
+    
+    // Test repositioning
+    await canvas.locator('[data-testid="dropped-component"]').dragTo({ x: 100, y: 100 });
+    
+    // Test multi-select
+    await page.keyboard.down('Control');
+    await canvas.locator('[data-testid="dropped-component"]').click();
+    await page.keyboard.up('Control');
+    
+    // Test group operations
+    await expect(page.locator('[data-testid="group-controls"]')).toBeVisible();
+  });
+  
+  test('FR-002.3: Canvas Rendering', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Test real-time rendering
+    await expect(page.locator('[data-testid="canvas"]')).toBeVisible();
+    
+    // Test responsive preview
+    await page.click('[data-testid="viewport-mobile"]');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/mobile-viewport/);
+    
+    await page.click('[data-testid="viewport-tablet"]');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/tablet-viewport/);
+    
+    await page.click('[data-testid="viewport-desktop"]');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/desktop-viewport/);
+    
+    // Test zoom functionality
+    await page.click('[data-testid="zoom-in"]');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/zoomed-in/);
+    
+    await page.click('[data-testid="zoom-out"]');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/zoomed-out/);
+    
+    // Test grid overlay
+    await page.click('[data-testid="toggle-grid"]');
+    await expect(page.locator('[data-testid="grid-overlay"]')).toBeVisible();
+    
+    // Test dark/light mode
+    await page.click('[data-testid="toggle-theme"]');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/dark-theme/);
+  });
+});
+
+// FR-003: Properties Panel Tests
+test.describe('Properties Panel Requirements', () => {
+  test('FR-003.1: Props Editor', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Select a component
+    await page.click('[data-testid="component-button"]');
+    await page.locator('[data-testid="canvas"]').click();
+    
+    // Test properties panel visibility
+    await expect(page.locator('[data-testid="properties-panel"]')).toBeVisible();
+    
+    // Test dynamic form generation
+    await expect(page.locator('[data-testid="props-form"]')).toBeVisible();
+    
+    // Test variant selection
+    await page.selectOption('[data-testid="variant-select"]', 'outline');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('variant="outline"');
+    
+    // Test size selection
+    await page.selectOption('[data-testid="size-select"]', 'lg');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('size="lg"');
+    
+    // Test disabled toggle
+    await page.check('[data-testid="disabled-checkbox"]');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('disabled');
+    
+    // Test children input
+    await page.fill('[data-testid="children-input"]', 'Click me');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('Click me');
+  });
+  
+  test('FR-003.2: Tailwind Classes Editor', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Select a component
+    await page.click('[data-testid="component-button"]');
+    await page.locator('[data-testid="canvas"]').click();
+    
+    // Test Tailwind editor
+    await expect(page.locator('[data-testid="tailwind-editor"]')).toBeVisible();
+    
+    // Test autocomplete
+    await page.fill('[data-testid="tailwind-input"]', 'bg-');
+    await expect(page.locator('[data-testid="tailwind-suggestions"]')).toBeVisible();
+    
+    // Test class validation
+    await page.fill('[data-testid="tailwind-input"]', 'bg-red-500');
+    await expect(page.locator('[data-testid="tailwind-input"]')).toHaveClass(/valid/);
+    
+    await page.fill('[data-testid="tailwind-input"]', 'invalid-class');
+    await expect(page.locator('[data-testid="tailwind-input"]')).toHaveClass(/invalid/);
+    
+    // Test responsive classes
+    await page.fill('[data-testid="tailwind-input"]', 'sm:bg-blue-500 md:bg-green-500');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('sm:bg-blue-500 md:bg-green-500');
+    
+    // Test live preview
+    await page.fill('[data-testid="tailwind-input"]', 'bg-red-500 text-white p-4');
+    await expect(page.locator('[data-testid="canvas"]')).toHaveClass(/bg-red-500/);
+  });
+  
+  test('FR-003.3: Layout Properties', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Select a component
+    await page.click('[data-testid="component-button"]');
+    await page.locator('[data-testid="canvas"]').click();
+    
+    // Test flexbox properties
+    await page.selectOption('[data-testid="flex-direction"]', 'row');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('flex-row');
+    
+    await page.selectOption('[data-testid="justify-content"]', 'center');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('justify-center');
+    
+    await page.selectOption('[data-testid="align-items"]', 'center');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('items-center');
+    
+    // Test grid properties
+    await page.selectOption('[data-testid="display"]', 'grid');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('grid');
+    
+    await page.fill('[data-testid="grid-template-columns"]', 'repeat(3, 1fr)');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('grid-cols-3');
+    
+    // Test spacing
+    await page.fill('[data-testid="padding"]', '4');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('p-4');
+    
+    await page.fill('[data-testid="margin"]', '8');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('m-8');
+  });
+});
+
+// Performance Requirements Tests
+test.describe('Performance Requirements', () => {
+  test('PERF-001: Startup Performance', async ({ page }) => {
+    const startTime = Date.now();
+    
+    await page.goto('/');
+    
+    const loadTime = Date.now() - startTime;
+    expect(loadTime).toBeLessThan(3000); // < 3 seconds
+    
+    // Test project loading performance
+    const projectStartTime = Date.now();
+    await page.click('[data-testid="create-project"]');
+    await page.click('[data-testid="create-project-btn"]');
+    
+    const projectLoadTime = Date.now() - projectStartTime;
+    expect(projectLoadTime).toBeLessThan(5000); // < 5 seconds
+  });
+  
+  test('PERF-002: Runtime Performance', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Test UI interaction performance
+    const interactionStart = Date.now();
+    await page.click('[data-testid="component-library"]');
+    const interactionTime = Date.now() - interactionStart;
+    expect(interactionTime).toBeLessThan(100); // < 100ms
+    
+    // Test file sync performance
+    const syncStart = Date.now();
+    await page.click('[data-testid="component-button"]');
+    await page.locator('[data-testid="canvas"]').click();
+    const syncTime = Date.now() - syncStart;
+    expect(syncTime).toBeLessThan(200); // < 200ms
+  });
+});
+
+// Accessibility Requirements Tests
+test.describe('Accessibility Requirements', () => {
+  test('ACC-001: Keyboard Navigation', async ({ page }) => {
+    await page.goto('/');
+    
+    // Test tab navigation
+    await page.keyboard.press('Tab');
+    await expect(page.locator(':focus')).toBeVisible();
+    
+    // Test component library keyboard access
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-testid="component-library"]')).toBeVisible();
+    
+    // Test canvas keyboard navigation
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(page.locator('[data-testid="canvas"]')).toBeFocused();
+  });
+  
+  test('ACC-002: Visual Accessibility', async ({ page }) => {
+    await page.goto('/');
+    
+    // Test color contrast
+    const contrast = await page.evaluate(() => {
+      const element = document.querySelector('[data-testid="main-content"]');
+      const styles = window.getComputedStyle(element);
+      // This would need actual contrast calculation
+      return true; // Placeholder
+    });
+    expect(contrast).toBe(true);
+    
+    // Test scalable fonts
+    await page.evaluate(() => {
+      document.body.style.fontSize = '20px';
+    });
+    await expect(page.locator('[data-testid="main-content"]')).toBeVisible();
+  });
+  
+  test('ACC-003: Motor Accessibility', async ({ page }) => {
+    await page.goto('/');
+    
+    // Test large click targets
+    const button = page.locator('[data-testid="action-button"]');
+    const size = await button.boundingBox();
+    expect(size.width).toBeGreaterThanOrEqual(44);
+    expect(size.height).toBeGreaterThanOrEqual(44);
+    
+    // Test drag and drop alternatives
+    await page.click('[data-testid="component-button"]');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-testid="canvas"]')).toContainText('Button');
+  });
+});
+
+// Security Requirements Tests
+test.describe('Security Requirements', () => {
+  test('SEC-001: File System Security', async ({ page }) => {
+    await page.goto('/');
+    
+    // Test sandboxed file access
+    const result = await page.evaluate(() => {
+      try {
+        // This should be prevented in sandboxed environment
+        require('fs').readFileSync('/etc/passwd');
+        return false;
+      } catch (e) {
+        return true; // Access should be denied
+      }
+    });
+    expect(result).toBe(true);
+  });
+  
+  test('SEC-002: Code Security', async ({ page }) => {
+    await page.goto('/project');
+    
+    // Test XSS prevention
+    await page.fill('[data-testid="children-input"]', '<script>alert("xss")</script>');
+    await expect(page.locator('[data-testid="canvas"]')).not.toContainText('<script>');
+    
+    // Test input validation
+    await page.fill('[data-testid="tailwind-input"]', 'javascript:alert("xss")');
+    await expect(page.locator('[data-testid="tailwind-input"]')).toHaveClass(/invalid/);
+  });
+});
+```
+
+## 🔄 Continuous Validation Process
+
+### 1. Pre - Commit Validation
+    ```bash
+# Run before every commit
+npm run validate-requirements
+npm run test:e2e
+npm run test:performance
+npm run test:accessibility
+```
+
+### 2. CI / CD Pipeline Integration
+    ```yaml
+# .github/workflows/requirements-validation.yml
+name: Requirements Validation
+on: [push, pull_request]
+jobs:
+  validate-requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: npm install
+      - name: Run requirements tests
+        run: npm run test:requirements
+      - name: Run E2E tests
+        run: npm run test:e2e
+      - name: Run performance tests
+        run: npm run test:performance
+      - name: Run accessibility tests
+        run: npm run test:accessibility
+```
+
+### 3. Requirements Compliance Dashboard
+Create a dashboard that shows:
+-[] Requirements completion status
+    - [] Test coverage per requirement
+        - [] Performance metrics
+            - [] Security compliance
+                - [] Accessibility compliance
+
+## 📊 Success Metrics Validation
+
+### Automated Success Criteria Checking
+    ```typescript
+// success-metrics-validator.ts
+export class SuccessMetricsValidator {
+  async validateUserAdoption(): Promise<boolean> {
+    // Check if 1,000+ users target is met
+    const userCount = await this.getActiveUserCount();
+    return userCount >= 1000;
+  }
+  
+  async validatePerformance(): Promise<boolean> {
+    // Check if performance targets are met
+    const startupTime = await this.measureStartupTime();
+    const memoryUsage = await this.measureMemoryUsage();
+    const syncLatency = await this.measureSyncLatency();
+    
+    return startupTime < 3000 && 
+           memoryUsage < 1000000000 && 
+           syncLatency < 200;
+  }
+  
+  async validateQuality(): Promise<boolean> {
+    // Check if quality targets are met
+    const testCoverage = await this.getTestCoverage();
+    const bugCount = await this.getBugCount();
+    
+    return testCoverage >= 90 && bugCount.critical < 5;
+  }
+}
+```
+
+## 🚨 Non - Compliance Handling
+
+### 1. Automatic Detection
+    - [] Requirements validation failures
+        - [] Performance regression detection
+            - [] Security vulnerability detection
+                - [] Accessibility compliance failures
+
+### 2. Remediation Process
+    - [] Immediate notification of non - compliance
+        - [] Automatic rollback if critical issues
+            - [] Required fixes before merge
+                - [] Documentation of deviations
+
+### 3. Escalation Process
+    - [] Team lead notification for critical issues
+        - [] Stakeholder notification for major deviations
+            - [] Requirements review and update if needed
+
+## 📝 Documentation Requirements
+
+### 1. Requirements Traceability
+    - [] Link every implementation to specific requirements
+        - [] Document test coverage per requirement
+            - [] Maintain requirements compliance matrix
+                - [] Update requirements status regularly
+
+### 2. Deviation Documentation
+    - [] Document any requirements deviations
+        - [] Justify deviations with technical reasoning
+            - [] Get stakeholder approval for deviations
+                - [] Update requirements if deviations become permanent
+
+---
+
+## 🎯 Final Validation Checklist
+
+Before considering ANY task complete, verify:
+
+-[] All Functional Requirements(FR - XXX) are implemented and tested
+    - [] All Non - Functional Requirements(NFR - XXX) are met
+        - [] All Technical Requirements(TR - XXX) are satisfied
+            - [] All Performance Requirements(PERF - XXX) are validated
+                - [] All Security Requirements(SEC - XXX) are implemented
+                    - [] All Accessibility Requirements(ACC - XXX) are tested
+                        - [] Playwright E2E tests pass for all user stories
+                            - [] Performance benchmarks are met
+                                - [] Security scans pass
+                                    - [] Accessibility audits pass
+                                        - [] Requirements compliance dashboard shows 100 % completion
+                                            - [] Success metrics are on track
+                                                - [] Documentation is updated
+                                                    - [] Code review is completed
+                                                        - [] Stakeholder approval is obtained
+
+                                                            ** Remember: No task is complete until ALL requirements are validated and met! **

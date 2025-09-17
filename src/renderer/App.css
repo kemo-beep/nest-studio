@@ -1,0 +1,337 @@
+/* Global styles for Nest Studio */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+    height: 100%;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+    background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Focus styles */
+*:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+    background-color: #3b82f6;
+    color: white;
+}
+
+/* Drag and drop styles */
+.drag-over {
+    background-color: #dbeafe;
+    border-color: #3b82f6;
+}
+
+.drag-active {
+    background-color: #bfdbfe;
+}
+
+/* Canvas styles */
+.canvas-container {
+    position: relative;
+    overflow: hidden;
+    background-image:
+        radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+}
+
+.canvas-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+/* Component selection styles */
+.component-selected {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.component-hovered {
+    outline: 1px solid #6b7280;
+    outline-offset: 1px;
+}
+
+/* Resize handles */
+.resize-handle {
+    position: absolute;
+    background-color: #3b82f6;
+    border: 1px solid white;
+    border-radius: 2px;
+}
+
+.resize-handle-n {
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    cursor: n-resize;
+}
+
+.resize-handle-s {
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    cursor: s-resize;
+}
+
+.resize-handle-e {
+    right: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    cursor: e-resize;
+}
+
+.resize-handle-w {
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    cursor: w-resize;
+}
+
+.resize-handle-ne {
+    top: -4px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    cursor: ne-resize;
+}
+
+.resize-handle-nw {
+    top: -4px;
+    left: -4px;
+    width: 8px;
+    height: 8px;
+    cursor: nw-resize;
+}
+
+.resize-handle-se {
+    bottom: -4px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    cursor: se-resize;
+}
+
+.resize-handle-sw {
+    bottom: -4px;
+    left: -4px;
+    width: 8px;
+    height: 8px;
+    cursor: sw-resize;
+}
+
+/* Animation classes */
+.fade-in {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.fade-out {
+    animation: fadeOut 0.2s ease-in-out;
+}
+
+.slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+}
+
+.slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+.slide-in-up {
+    animation: slideInUp 0.3s ease-out;
+}
+
+.slide-in-down {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Loading spinner */
+.spinner {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Utility classes */
+.text-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
