@@ -40,6 +40,14 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
     }, [])
 
     const handleInputChange = (field: string, value: any) => {
+        if (field === 'name') {
+            // Sanitize project name to be npm-compatible
+            value = value
+                .toLowerCase()
+                .replace(/[^a-z0-9-]/g, '-') // Replace non-URL-friendly chars with hyphens
+                .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+                .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+        }
         setFormData(prev => ({ ...prev, [field]: value }))
     }
 
@@ -168,6 +176,9 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                     placeholder="my-nextjs-app"
                                 />
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Project name will be automatically converted to lowercase with hyphens (e.g., "My Project" → "my-project")
+                                </p>
                             </div>
 
                             <div>

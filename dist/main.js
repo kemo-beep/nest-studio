@@ -62,9 +62,8 @@ var ProjectService = class {
       });
       console.log("create-next-app completed");
       if (shadcn) {
-        console.log("Setting up shadcn/ui...");
-        await this.setupShadcnUI(projectPath);
-        console.log("shadcn/ui setup completed");
+        console.log("Skipping shadcn/ui setup to avoid interactive prompts");
+        console.log("shadcn/ui can be set up manually later if needed");
       }
       console.log("Creating project structure...");
       await this.createProjectStructure(projectPath, { typescript, appRouter });
@@ -119,16 +118,21 @@ var ProjectService = class {
       console.log("=== RUN CREATE NEXT APP DEBUG START ===");
       console.log("Project path:", projectPath);
       console.log("Options:", options);
+      const projectName = path.basename(projectPath);
+      const parentDir = path.dirname(projectPath);
       const args = [
         "create-next-app@latest",
-        projectPath,
+        projectName,
+        // Use just the project name, not full path
         "--typescript",
         "--tailwind",
         "--eslint",
         "--app",
         "--src-dir",
         "--import-alias",
-        "@/*"
+        "@/*",
+        "--yes"
+        // Skip all prompts
       ];
       if (!options.typescript) {
         args.splice(args.indexOf("--typescript"), 1);
@@ -143,19 +147,37 @@ var ProjectService = class {
         args.splice(args.indexOf("--app"), 1);
       }
       console.log("Final args:", args);
-      console.log("Working directory:", path.dirname(projectPath));
+      console.log("Working directory:", parentDir);
+      console.log("Project name:", projectName);
       const process2 = (0, import_child_process.spawn)("npx", args, {
-        stdio: "inherit",
-        cwd: path.dirname(projectPath)
+        stdio: "pipe",
+        cwd: parentDir
+        // Run in the parent directory
+      });
+      let output = "";
+      let errorOutput = "";
+      process2.stdout?.on("data", (data) => {
+        const text = data.toString();
+        output += text;
+        console.log("create-next-app stdout:", text);
+      });
+      process2.stderr?.on("data", (data) => {
+        const text = data.toString();
+        errorOutput += text;
+        console.log("create-next-app stderr:", text);
       });
       process2.on("close", (code) => {
         console.log("create-next-app process closed with code:", code);
+        console.log("Full output:", output);
+        if (errorOutput) {
+          console.log("Error output:", errorOutput);
+        }
         if (code === 0) {
           console.log("create-next-app completed successfully");
           resolve();
         } else {
           console.error("create-next-app failed with code:", code);
-          reject(new Error(`create-next-app failed with code ${code}`));
+          reject(new Error(`create-next-app failed with code ${code}. Output: ${output}. Error: ${errorOutput}`));
         }
       });
       process2.on("error", (error) => {
@@ -167,18 +189,39 @@ var ProjectService = class {
   }
   async setupShadcnUI(projectPath) {
     return new Promise((resolve, reject) => {
-      const process2 = (0, import_child_process.spawn)("npx", ["shadcn@latest", "init", "-y"], {
-        stdio: "inherit",
+      console.log("Setting up shadcn/ui...");
+      const process2 = (0, import_child_process.spawn)("npx", ["shadcn@latest", "init", "-y", "--defaults"], {
+        stdio: "pipe",
         cwd: projectPath
       });
+      let output = "";
+      let errorOutput = "";
+      process2.stdout?.on("data", (data) => {
+        const text = data.toString();
+        output += text;
+        console.log("shadcn stdout:", text);
+      });
+      process2.stderr?.on("data", (data) => {
+        const text = data.toString();
+        errorOutput += text;
+        console.log("shadcn stderr:", text);
+      });
       process2.on("close", (code) => {
+        console.log("shadcn process closed with code:", code);
+        console.log("shadcn output:", output);
+        if (errorOutput) {
+          console.log("shadcn error:", errorOutput);
+        }
         if (code === 0) {
+          console.log("shadcn setup completed successfully");
           resolve();
         } else {
-          reject(new Error(`shadcn init failed with code ${code}`));
+          console.error("shadcn init failed with code:", code);
+          reject(new Error(`shadcn init failed with code ${code}. Output: ${output}. Error: ${errorOutput}`));
         }
       });
       process2.on("error", (error) => {
+        console.error("shadcn process error:", error);
         reject(error);
       });
     });
