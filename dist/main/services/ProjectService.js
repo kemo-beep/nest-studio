@@ -39,12 +39,14 @@ const fs = __importStar(require("fs/promises"));
 const path = __importStar(require("path"));
 class ProjectService {
     async createProject(options) {
+        console.log('=== PROJECT SERVICE DEBUG START ===');
         console.log('Creating project with options:', options);
         const { name, directory, nextjsVersion = '15', typescript = true, appRouter = true, tailwind = true, shadcn = true, eslint = true, prettier = true } = options;
         const projectPath = path.join(directory, name);
         console.log('Project path:', projectPath);
         try {
             // Create project directory
+            console.log('Creating project directory...');
             await fs.mkdir(projectPath, { recursive: true });
             console.log('Created project directory');
             // Create Next.js project using create-next-app
@@ -72,6 +74,7 @@ class ProjectService {
             console.log('Generating project info...');
             const projectInfo = await this.generateProjectInfo(projectPath);
             console.log('Project created successfully:', projectInfo);
+            console.log('=== PROJECT SERVICE DEBUG END ===');
             return projectInfo;
         }
         catch (error) {
@@ -125,6 +128,9 @@ class ProjectService {
     }
     async runCreateNextApp(projectPath, options) {
         return new Promise((resolve, reject) => {
+            console.log('=== RUN CREATE NEXT APP DEBUG START ===');
+            console.log('Project path:', projectPath);
+            console.log('Options:', options);
             const args = [
                 'create-next-app@latest',
                 projectPath,
@@ -147,21 +153,28 @@ class ProjectService {
             if (!options.appRouter) {
                 args.splice(args.indexOf('--app'), 1);
             }
+            console.log('Final args:', args);
+            console.log('Working directory:', path.dirname(projectPath));
             const process = (0, child_process_1.spawn)('npx', args, {
                 stdio: 'inherit',
                 cwd: path.dirname(projectPath)
             });
             process.on('close', (code) => {
+                console.log('create-next-app process closed with code:', code);
                 if (code === 0) {
+                    console.log('create-next-app completed successfully');
                     resolve();
                 }
                 else {
+                    console.error('create-next-app failed with code:', code);
                     reject(new Error(`create-next-app failed with code ${code}`));
                 }
             });
             process.on('error', (error) => {
+                console.error('create-next-app process error:', error);
                 reject(error);
             });
+            console.log('=== RUN CREATE NEXT APP DEBUG END ===');
         });
     }
     async setupShadcnUI(projectPath) {

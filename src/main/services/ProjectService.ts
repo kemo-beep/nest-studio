@@ -5,6 +5,7 @@ import { ProjectInfo, ProjectOptions } from '@/shared/types'
 
 export class ProjectService {
     async createProject(options: ProjectOptions): Promise<ProjectInfo> {
+        console.log('=== PROJECT SERVICE DEBUG START ===')
         console.log('Creating project with options:', options)
 
         const {
@@ -24,6 +25,7 @@ export class ProjectService {
 
         try {
             // Create project directory
+            console.log('Creating project directory...')
             await fs.mkdir(projectPath, { recursive: true })
             console.log('Created project directory')
 
@@ -55,6 +57,7 @@ export class ProjectService {
             console.log('Generating project info...')
             const projectInfo = await this.generateProjectInfo(projectPath)
             console.log('Project created successfully:', projectInfo)
+            console.log('=== PROJECT SERVICE DEBUG END ===')
 
             return projectInfo
         } catch (error) {
@@ -123,6 +126,10 @@ export class ProjectService {
 
     private async runCreateNextApp(projectPath: string, options: any): Promise<void> {
         return new Promise((resolve, reject) => {
+            console.log('=== RUN CREATE NEXT APP DEBUG START ===')
+            console.log('Project path:', projectPath)
+            console.log('Options:', options)
+            
             const args = [
                 'create-next-app@latest',
                 projectPath,
@@ -150,22 +157,31 @@ export class ProjectService {
                 args.splice(args.indexOf('--app'), 1)
             }
 
+            console.log('Final args:', args)
+            console.log('Working directory:', path.dirname(projectPath))
+
             const process = spawn('npx', args, {
                 stdio: 'inherit',
                 cwd: path.dirname(projectPath)
             })
 
             process.on('close', (code) => {
+                console.log('create-next-app process closed with code:', code)
                 if (code === 0) {
+                    console.log('create-next-app completed successfully')
                     resolve()
                 } else {
+                    console.error('create-next-app failed with code:', code)
                     reject(new Error(`create-next-app failed with code ${code}`))
                 }
             })
 
             process.on('error', (error) => {
+                console.error('create-next-app process error:', error)
                 reject(error)
             })
+            
+            console.log('=== RUN CREATE NEXT APP DEBUG END ===')
         })
     }
 

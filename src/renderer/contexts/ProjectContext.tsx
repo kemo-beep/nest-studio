@@ -35,27 +35,43 @@ export function ProjectProvider({
     const [error, setError] = useState<string | null>(null)
 
     const createProject = useCallback(async (options: any) => {
+        console.log('=== PROJECT CONTEXT DEBUG START ===')
+        console.log('Creating project with options:', options)
+        console.log('window.electronAPI:', window.electronAPI)
+        console.log('project.create function:', window.electronAPI?.project?.create)
+        
+        if (!window.electronAPI?.project?.create) {
+            console.error('window.electronAPI.project.create is not available!')
+            throw new Error('Electron API not available. Please restart the application.')
+        }
+        
         setIsLoading(true)
         setError(null)
 
         try {
+            console.log('Calling window.electronAPI.project.create...')
             const response = await window.electronAPI.project.create(options)
+            console.log('IPC response:', response)
 
             if (response.success) {
                 const project = response.data
+                console.log('Project created successfully:', project)
                 setCurrentProject(project)
                 setProjects(prev => [...prev, project])
                 onProjectCreated(project)
             } else {
+                console.error('Project creation failed:', response.error)
                 throw new Error(response.error || 'Failed to create project')
             }
         } catch (err) {
+            console.error('Error in createProject:', err)
             const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
             setError(errorMessage)
             throw err
         } finally {
             setIsLoading(false)
         }
+        console.log('=== PROJECT CONTEXT DEBUG END ===')
     }, [onProjectCreated])
 
     const importProject = useCallback(async (projectPath: string) => {

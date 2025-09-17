@@ -32,6 +32,7 @@ var fs = __toESM(require("fs/promises"));
 var path = __toESM(require("path"));
 var ProjectService = class {
   async createProject(options) {
+    console.log("=== PROJECT SERVICE DEBUG START ===");
     console.log("Creating project with options:", options);
     const {
       name,
@@ -47,6 +48,7 @@ var ProjectService = class {
     const projectPath = path.join(directory, name);
     console.log("Project path:", projectPath);
     try {
+      console.log("Creating project directory...");
       await fs.mkdir(projectPath, { recursive: true });
       console.log("Created project directory");
       console.log("Running create-next-app...");
@@ -70,6 +72,7 @@ var ProjectService = class {
       console.log("Generating project info...");
       const projectInfo = await this.generateProjectInfo(projectPath);
       console.log("Project created successfully:", projectInfo);
+      console.log("=== PROJECT SERVICE DEBUG END ===");
       return projectInfo;
     } catch (error) {
       console.error("Error creating project:", error);
@@ -113,6 +116,9 @@ var ProjectService = class {
   }
   async runCreateNextApp(projectPath, options) {
     return new Promise((resolve, reject) => {
+      console.log("=== RUN CREATE NEXT APP DEBUG START ===");
+      console.log("Project path:", projectPath);
+      console.log("Options:", options);
       const args = [
         "create-next-app@latest",
         projectPath,
@@ -136,20 +142,27 @@ var ProjectService = class {
       if (!options.appRouter) {
         args.splice(args.indexOf("--app"), 1);
       }
+      console.log("Final args:", args);
+      console.log("Working directory:", path.dirname(projectPath));
       const process2 = (0, import_child_process.spawn)("npx", args, {
         stdio: "inherit",
         cwd: path.dirname(projectPath)
       });
       process2.on("close", (code) => {
+        console.log("create-next-app process closed with code:", code);
         if (code === 0) {
+          console.log("create-next-app completed successfully");
           resolve();
         } else {
+          console.error("create-next-app failed with code:", code);
           reject(new Error(`create-next-app failed with code ${code}`));
         }
       });
       process2.on("error", (error) => {
+        console.error("create-next-app process error:", error);
         reject(error);
       });
+      console.log("=== RUN CREATE NEXT APP DEBUG END ===");
     });
   }
   async setupShadcnUI(projectPath) {
@@ -583,7 +596,7 @@ var NestStudioApp = class {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        preload: import_path.default.join(__dirname, "preload.js"),
+        preload: import_path.default.join(__dirname, "main/preload.js"),
         webSecurity: true
       },
       titleBarStyle: "default",
@@ -591,8 +604,25 @@ var NestStudioApp = class {
       // Don't show until ready
     });
     if (isDev) {
-      console.log("Loading development URL: http://localhost:3000");
-      mainWindow.loadURL("http://localhost:3000");
+      const tryLoadDev = async () => {
+        try {
+          console.log("Trying to load development URL: http://localhost:3000");
+          await mainWindow.loadURL("http://localhost:3000");
+          console.log("Successfully loaded from port 3000");
+        } catch (error) {
+          try {
+            console.log("Port 3000 failed, trying port 3001...");
+            await mainWindow.loadURL("http://localhost:3001");
+            console.log("Successfully loaded from port 3001");
+          } catch (error2) {
+            console.error("Failed to load from both ports:", error2);
+            const htmlPath = import_path.default.join(__dirname, "index.html");
+            console.log("Falling back to production file:", htmlPath);
+            mainWindow.loadFile(htmlPath);
+          }
+        }
+      };
+      tryLoadDev();
       mainWindow.webContents.openDevTools();
     } else {
       const htmlPath = import_path.default.join(__dirname, "index.html");
@@ -607,7 +637,7 @@ var NestStudioApp = class {
                 console.log('dialog available:', !!window.electronAPI?.dialog?.openDirectory)
             `);
     });
-    mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
+    mainWindow.webContents.on("did-fail-load", (_, errorCode, errorDescription) => {
       console.error("Page failed to load:", errorCode, errorDescription);
     });
     mainWindow.once("ready-to-show", () => {
@@ -625,7 +655,8 @@ var NestStudioApp = class {
   setupAppEvents() {
     mainWindow?.webContents.on("will-navigate", (event, navigationUrl) => {
       const parsedUrl = new URL(navigationUrl);
-      if (parsedUrl.origin !== "http://localhost:3000" && !isDev) {
+      const allowedOrigins = isDev ? ["http://localhost:3000", "http://localhost:3001"] : ["http://localhost:3000"];
+      if (!allowedOrigins.includes(parsedUrl.origin)) {
         event.preventDefault();
       }
     });
@@ -636,10 +667,15 @@ var NestStudioApp = class {
   }
   setupIPC() {
     import_electron.ipcMain.handle("project:create", async (_, options) => {
+      console.log("=== MAIN PROCESS: project:create called ===");
+      console.log("Options received:", options);
       try {
+        console.log("Calling projectService.createProject...");
         const result = await this.projectService.createProject(options);
+        console.log("Project created successfully:", result);
         return { success: true, data: result };
       } catch (error) {
+        console.error("Error creating project:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
     });
@@ -708,8 +744,10 @@ var NestStudioApp = class {
       }
     });
     import_electron.ipcMain.handle("dialog:openDirectory", async () => {
-      console.log("Dialog: openDirectory called");
+      console.log("=== MAIN PROCESS: dialog:openDirectory called ===");
       try {
+        console.log("Main window exists:", !!mainWindow);
+        console.log("Calling dialog.showOpenDialog...");
         const result = await import_electron.dialog.showOpenDialog(mainWindow, {
           properties: ["openDirectory"],
           title: "Select Project Directory"

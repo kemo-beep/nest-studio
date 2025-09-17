@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Debug Test</h1>
+    <button id="test-btn">Test Project Creation</button>
+    <div id="output"></div>
+
+    <script>
+        document.getElementById('test-btn').addEventListener('click', async () => {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                console.log('Testing window.electronAPI...');
+                console.log('window.electronAPI:', window.electronAPI);
+                
+                if (!window.electronAPI) {
+                    output.innerHTML = '<p style="color: red;">window.electronAPI is not available!</p>';
+                    return;
+                }
+                
+                if (!window.electronAPI.project) {
+                    output.innerHTML = '<p style="color: red;">window.electronAPI.project is not available!</p>';
+                    return;
+                }
+                
+                if (!window.electronAPI.project.create) {
+                    output.innerHTML = '<p style="color: red;">window.electronAPI.project.create is not available!</p>';
+                    return;
+                }
+                
+                output.innerHTML = '<p style="color: green;">API is available, testing project creation...</p>';
+                
+                const result = await window.electronAPI.project.create({
+                    name: 'test-project',
+                    directory: '/tmp',
+                    nextjsVersion: '15',
+                    typescript: true,
+                    appRouter: true,
+                    tailwind: true,
+                    shadcn: true,
+                    eslint: true,
+                    prettier: true
+                });
+                
+                console.log('Project creation result:', result);
+                output.innerHTML = '<p style="color: green;">Project creation result: ' + JSON.stringify(result) + '</p>';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                output.innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

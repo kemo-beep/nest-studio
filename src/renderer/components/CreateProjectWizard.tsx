@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface CreateProjectWizardProps {
     onClose: () => void
@@ -19,6 +19,25 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
         prettier: true
     })
     const [isCreating, setIsCreating] = useState(false)
+    const [apiReady, setApiReady] = useState(false)
+
+    useEffect(() => {
+        // Check if the Electron API is available
+        const checkAPI = () => {
+            if (window.electronAPI?.project?.create && window.electronAPI?.dialog?.openDirectory) {
+                console.log('Electron API is ready')
+                setApiReady(true)
+            } else {
+                console.log('Electron API not ready yet, retrying...')
+                console.log('window.electronAPI:', window.electronAPI)
+                console.log('project.create:', window.electronAPI?.project?.create)
+                console.log('dialog.openDirectory:', window.electronAPI?.dialog?.openDirectory)
+                setTimeout(checkAPI, 100)
+            }
+        }
+
+        checkAPI()
+    }, [])
 
     const handleInputChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }))
@@ -37,27 +56,42 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
     }
 
     const handleSubmit = async () => {
+        console.log('=== CREATE PROJECT DEBUG START ===')
+        console.log('Form data:', formData)
+        console.log('onCreateProject function:', onCreateProject)
+        console.log('API ready:', apiReady)
+        console.log('window.electronAPI:', window.electronAPI)
+
+        if (!apiReady) {
+            console.error('API not ready yet, cannot create project')
+            alert('Please wait for the application to fully load before creating a project.')
+            return
+        }
+
         setIsCreating(true)
         try {
+            console.log('Calling onCreateProject...')
             await onCreateProject(formData)
+            console.log('Project created successfully')
         } catch (error) {
             console.error('Failed to create project:', error)
+            // Show error message to user
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+            alert(`Failed to create project: ${errorMessage}`)
         } finally {
             setIsCreating(false)
         }
+        console.log('=== CREATE PROJECT DEBUG END ===')
     }
 
     const handleDirectorySelect = async () => {
+        if (!apiReady) {
+            console.log('API not ready yet, please wait...')
+            return
+        }
+
         try {
             console.log('Opening directory dialog...')
-            console.log('window.electronAPI:', window.electronAPI)
-            console.log('dialog:', window.electronAPI?.dialog)
-
-            if (!window.electronAPI?.dialog?.openDirectory) {
-                console.error('Dialog API not available')
-                return
-            }
-
             const result = await window.electronAPI.dialog.openDirectory()
             console.log('Dialog result:', result)
 
@@ -65,10 +99,15 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
                 setFormData(prev => ({ ...prev, directory: result.data }))
                 console.log('Directory set to:', result.data)
             } else {
-                console.error('Dialog failed:', result.error)
+                console.log('Dialog cancelled or failed:', result.error)
+                // Don't show alert for user cancellation
+                if (result.error && result.error !== 'No directory selected') {
+                    console.error('Dialog error:', result.error)
+                }
             }
         } catch (error) {
             console.error('Failed to select directory:', error)
+            alert(`Failed to select directory: ${error}`)
         }
     }
 
@@ -149,9 +188,13 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
                                             console.log('Browse button clicked!')
                                             handleDirectorySelect()
                                         }}
-                                        className="px-4 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500"
+                                        disabled={!apiReady}
+                                        className={`px-4 py-2 rounded-md ${apiReady
+                                            ? 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                                            : 'bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                            }`}
                                     >
-                                        Browse
+                                        {apiReady ? 'Browse' : 'Loading...'}
                                     </button>
                                 </div>
                             </div>
@@ -293,7 +336,7 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
                         ) : (
                             <button
                                 onClick={handleSubmit}
-                                disabled={isCreating}
+                                disabled={isCreating || !apiReady}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isCreating ? (
@@ -301,6 +344,8 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
                                         <div className="spinner mr-2"></div>
                                         Creating...
                                     </div>
+                                ) : !apiReady ? (
+                                    'Loading...'
                                 ) : (
                                     'Create Project'
                                 )}

@@ -49,7 +49,7 @@ class NestStudioApp {
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
-                preload: path_1.default.join(__dirname, 'preload.js'),
+                preload: path_1.default.join(__dirname, 'main/preload.js'),
                 webSecurity: true,
             },
             titleBarStyle: 'default',
@@ -57,8 +57,29 @@ class NestStudioApp {
         });
         // Load the app
         if (isDev) {
-            console.log('Loading development URL: http://localhost:3000');
-            mainWindow.loadURL('http://localhost:3000');
+            // Try port 3000 first, then 3001 if 3000 is busy
+            const tryLoadDev = async () => {
+                try {
+                    console.log('Trying to load development URL: http://localhost:3000');
+                    await mainWindow.loadURL('http://localhost:3000');
+                    console.log('Successfully loaded from port 3000');
+                }
+                catch (error) {
+                    try {
+                        console.log('Port 3000 failed, trying port 3001...');
+                        await mainWindow.loadURL('http://localhost:3001');
+                        console.log('Successfully loaded from port 3001');
+                    }
+                    catch (error2) {
+                        console.error('Failed to load from both ports:', error2);
+                        // Fallback to production build
+                        const htmlPath = path_1.default.join(__dirname, 'index.html');
+                        console.log('Falling back to production file:', htmlPath);
+                        mainWindow.loadFile(htmlPath);
+                    }
+                }
+            };
+            tryLoadDev();
             // Open DevTools in development
             mainWindow.webContents.openDevTools();
         }
@@ -77,7 +98,7 @@ class NestStudioApp {
                 console.log('dialog available:', !!window.electronAPI?.dialog?.openDirectory)
             `);
         });
-        mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+        mainWindow.webContents.on('did-fail-load', (_, errorCode, errorDescription) => {
             console.error('Page failed to load:', errorCode, errorDescription);
         });
         // Show window when ready to prevent visual flash
@@ -99,7 +120,11 @@ class NestStudioApp {
         // Prevent navigation to external URLs
         mainWindow?.webContents.on('will-navigate', (event, navigationUrl) => {
             const parsedUrl = new URL(navigationUrl);
-            if (parsedUrl.origin !== 'http://localhost:3000' && !isDev) {
+            // Allow localhost ports 3000 and 3001 in development
+            const allowedOrigins = isDev
+                ? ['http://localhost:3000', 'http://localhost:3001']
+                : ['http://localhost:3000'];
+            if (!allowedOrigins.includes(parsedUrl.origin)) {
                 event.preventDefault();
             }
         });
@@ -112,11 +137,16 @@ class NestStudioApp {
     setupIPC() {
         // Project Management IPC
         electron_1.ipcMain.handle('project:create', async (_, options) => {
+            console.log('=== MAIN PROCESS: project:create called ===');
+            console.log('Options received:', options);
             try {
+                console.log('Calling projectService.createProject...');
                 const result = await this.projectService.createProject(options);
+                console.log('Project created successfully:', result);
                 return { success: true, data: result };
             }
             catch (error) {
+                console.error('Error creating project:', error);
                 return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
             }
         });
@@ -196,8 +226,10 @@ class NestStudioApp {
         });
         // Dialog IPC
         electron_1.ipcMain.handle('dialog:openDirectory', async () => {
-            console.log('Dialog: openDirectory called');
+            console.log('=== MAIN PROCESS: dialog:openDirectory called ===');
             try {
+                console.log('Main window exists:', !!mainWindow);
+                console.log('Calling dialog.showOpenDialog...');
                 const result = await electron_1.dialog.showOpenDialog(mainWindow, {
                     properties: ['openDirectory'],
                     title: 'Select Project Directory'

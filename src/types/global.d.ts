@@ -1,3 +1,5 @@
+/// <reference types="react" />
+
 declare global {
     interface Window {
         electronAPI: {
@@ -27,4 +29,4 @@ declare global {
     }
 }
 
-export {}
+export { }

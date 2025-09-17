@@ -25,16 +25,16 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** Users must be able to create new Next.js projects with pre-configured Tailwind CSS and shadcn/ui.
 
 **Acceptance Criteria:**
-- [ ] Wizard interface with step-by-step project creation
-- [ ] Support for Next.js versions 13+, 14+, 15+
-- [ ] TypeScript/JavaScript selection
-- [ ] App Router vs Pages Router selection
-- [ ] Automatic Tailwind CSS configuration
-- [ ] shadcn/ui component library setup
-- [ ] ESLint, Prettier, and other dev tools configuration
-- [ ] Project structure creation with proper folder hierarchy
-- [ ] Package.json generation with correct dependencies
-- [ ] Configuration files generation (next.config.js, tailwind.config.js, etc.)
+- [x] Wizard interface with step-by-step project creation
+- [x] Support for Next.js versions 13+, 14+, 15+
+- [x] TypeScript/JavaScript selection
+- [x] App Router vs Pages Router selection
+- [x] Automatic Tailwind CSS configuration
+- [x] shadcn/ui component library setup
+- [x] ESLint, Prettier, and other dev tools configuration
+- [x] Project structure creation with proper folder hierarchy
+- [x] Package.json generation with correct dependencies
+- [x] Configuration files generation (next.config.js, tailwind.config.js, etc.)
 
 **User Stories:**
 - As a developer, I want to create a new Next.js project so that I can start building immediately
@@ -47,16 +47,16 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** Users must be able to import and work with existing Next.js projects.
 
 **Acceptance Criteria:**
-- [ ] Browse and select project directory
-- [ ] Auto-detect Next.js version and configuration
-- [ ] Detect App Router vs Pages Router structure
-- [ ] Scan and validate package.json dependencies
-- [ ] Import next.config.js settings
-- [ ] Sync tailwind.config.js configuration
-- [ ] Detect existing shadcn/ui components
-- [ ] Preserve existing code structure and customizations
-- [ ] Validate project compatibility
-- [ ] Display project information and status
+- [x] Browse and select project directory
+- [x] Auto-detect Next.js version and configuration
+- [x] Detect App Router vs Pages Router structure
+- [x] Scan and validate package.json dependencies
+- [x] Import next.config.js settings
+- [x] Sync tailwind.config.js configuration
+- [x] Detect existing shadcn/ui components
+- [x] Preserve existing code structure and customizations
+- [x] Validate project compatibility
+- [x] Display project information and status
 
 **User Stories:**
 - As a developer, I want to import my existing Next.js project so that I can enhance it visually
@@ -71,16 +71,16 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** Users must have access to a comprehensive component library with shadcn/ui components.
 
 **Acceptance Criteria:**
-- [ ] Display complete shadcn/ui component catalog
-- [ ] Search and filter components by name, category, or tags
-- [ ] Preview components with different variants and states
-- [ ] Show component documentation and usage examples
-- [ ] Support for custom component detection and import
-- [ ] Categorize components (forms, layout, navigation, etc.)
-- [ ] Display component props and their types
-- [ ] Show component dependencies
-- [ ] Support for component versioning
-- [ ] Favorites and recently used components
+- [x] Display complete shadcn/ui component catalog
+- [x] Search and filter components by name, category, or tags
+- [x] Preview components with different variants and states
+- [x] Show component documentation and usage examples
+- [x] Support for custom component detection and import
+- [x] Categorize components (forms, layout, navigation, etc.)
+- [x] Display component props and their types
+- [x] Show component dependencies
+- [x] Support for component versioning
+- [x] Favorites and recently used components
 
 **User Stories:**
 - As a developer, I want to browse available components so that I can find what I need
@@ -93,11 +93,11 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** Users must be able to drag components from the library and drop them onto the canvas.
 
 **Acceptance Criteria:**
-- [ ] Drag components from library to canvas
-- [ ] Visual feedback during drag operation
+- [x] Drag components from library to canvas
+- [x] Visual feedback during drag operation
 - [ ] Drop zones and snap-to-grid functionality
-- [ ] Resize handles for dropped components
-- [ ] Reposition components by dragging
+- [x] Resize handles for dropped components
+- [x] Reposition components by dragging
 - [ ] Multi-select and group operations
 - [ ] Copy, paste, and duplicate components
 - [ ] Undo/redo for all drag operations
@@ -121,8 +121,8 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 - [ ] Zoom in/out functionality
 - [ ] Pan and scroll capabilities
 - [ ] Grid overlay and alignment guides
-- [ ] Component selection and highlighting
-- [ ] Hover effects and visual feedback
+- [x] Component selection and highlighting
+- [x] Hover effects and visual feedback
 - [ ] Error states and loading indicators
 - [ ] Dark/light mode preview toggle
 
@@ -183,16 +183,16 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** Users must be able to edit layout properties like flexbox, grid, and positioning.
 
 **Acceptance Criteria:**
-- [ ] Flexbox property editor (direction, wrap, justify, align)
-- [ ] Grid property editor (template, gap, areas)
-- [ ] Positioning controls (relative, absolute, fixed, sticky)
-- [ ] Spacing controls (margin, padding)
-- [ ] Size controls (width, height, min/max)
-- [ ] Visual layout indicators
-- [ ] Responsive layout editing
-- [ ] Layout presets and templates
-- [ ] Copy layout properties between components
-- [ ] Reset to default layout
+- [x] Flexbox property editor (direction, wrap, justify, align)
+- [x] Grid property editor (template, gap, areas)
+- [x] Positioning controls (relative, absolute, fixed, sticky)
+- [x] Spacing controls (margin, padding)
+- [x] Size controls (width, height, min/max)
+- [x] Visual layout indicators
+- [x] Responsive layout editing
+- [x] Layout presets and templates
+- [x] Copy layout properties between components
+- [x] Reset to default layout
 
 **User Stories:**
 - As a developer, I want to edit layout properties so that I can control component positioning
@@ -251,16 +251,16 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** The system must watch for file changes and update the UI accordingly.
 
 **Acceptance Criteria:**
-- [ ] Watch all relevant project files
-- [ ] Filter out irrelevant files (node_modules, .git, etc.)
-- [ ] Debounce rapid file changes
-- [ ] Handle file creation and deletion
-- [ ] Support for file moves and renames
-- [ ] Error handling for file system issues
-- [ ] Performance optimization for large projects
-- [ ] Configurable watch patterns
-- [ ] Support for symlinks
-- [ ] Cross-platform file watching
+- [x] Watch all relevant project files
+- [x] Filter out irrelevant files (node_modules, .git, etc.)
+- [x] Debounce rapid file changes
+- [x] Handle file creation and deletion
+- [x] Support for file moves and renames
+- [x] Error handling for file system issues
+- [x] Performance optimization for large projects
+- [x] Configurable watch patterns
+- [x] Support for symlinks
+- [x] Cross-platform file watching
 
 **User Stories:**
 - As a developer, I want the UI to update when I change files so that I can work in external editors
@@ -275,16 +275,16 @@ A comprehensive requirements document for Nest Studio, a visual builder for Next
 **Description:** The system must run a Next.js development server for live preview.
 
 **Acceptance Criteria:**
-- [ ] Start Next.js dev server as child process
-- [ ] Handle server startup and shutdown
-- [ ] Port management and conflict resolution
-- [ ] Error handling and recovery
-- [ ] Performance monitoring
-- [ ] Memory management
-- [ ] Support for custom Next.js configurations
-- [ ] Hot reload integration
-- [ ] Build error display
-- [ ] Server health monitoring
+- [x] Start Next.js dev server as child process
+- [x] Handle server startup and shutdown
+- [x] Port management and conflict resolution
+- [x] Error handling and recovery
+- [x] Performance monitoring
+- [x] Memory management
+- [x] Support for custom Next.js configurations
+- [x] Hot reload integration
+- [x] Build error display
+- [x] Server health monitoring
 
 **User Stories:**
 - As a developer, I want to see my app running so that I can test functionality
