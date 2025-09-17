@@ -793,6 +793,18 @@ export function ShadcnComponentLibrary({ onComponentSelect }: ShadcnComponentLib
         return matchesSearch && matchesCategory
     })
 
+    const handleDragStart = (e: React.DragEvent, component: ShadcnComponent) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({
+            type: 'component',
+            id: component.id,
+            name: component.name,
+            props: component.props,
+            importPath: component.importPath,
+            dependencies: component.dependencies
+        }))
+        e.dataTransfer.effectAllowed = 'copy'
+    }
+
     return (
         <div className="h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
             {/* Header */}
@@ -819,8 +831,8 @@ export function ShadcnComponentLibrary({ onComponentSelect }: ShadcnComponentLib
                             key={category.id}
                             onClick={() => setSelectedCategory(category.id)}
                             className={`px-2 py-1 text-xs rounded-md transition-colors ${selectedCategory === category.id
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                 }`}
                         >
                             {category.icon} {category.name}
@@ -834,7 +846,9 @@ export function ShadcnComponentLibrary({ onComponentSelect }: ShadcnComponentLib
                 {filteredComponents.map(component => (
                     <div
                         key={component.id}
-                        className="p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, component)}
+                        className="p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-move transition-colors"
                         onClick={() => onComponentSelect(component)}
                     >
                         <div className="flex items-start space-x-3">

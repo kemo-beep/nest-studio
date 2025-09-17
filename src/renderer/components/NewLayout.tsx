@@ -68,7 +68,7 @@ export function NewLayout({ project }: NewLayoutProps) {
                 const result = await window.electronAPI.fs.readFile(path)
                 if (result.success) {
                     setSelectedFile({
-                        name: 'page.tsx',
+                        name: 'Home',
                         path: path,
                         type: 'page',
                         isDirectory: false
@@ -138,8 +138,8 @@ export function NewLayout({ project }: NewLayoutProps) {
                         <button
                             onClick={() => setShowComponentLibrary(!showComponentLibrary)}
                             className={`px-3 py-1 text-sm rounded-md ${showComponentLibrary
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                                 }`}
                         >
                             Components
@@ -147,8 +147,8 @@ export function NewLayout({ project }: NewLayoutProps) {
                         <button
                             onClick={() => setShowPreview(!showPreview)}
                             className={`px-3 py-1 text-sm rounded-md ${showPreview
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                                 }`}
                         >
                             Preview

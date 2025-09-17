@@ -27,6 +27,9 @@ export function Canvas({ project: _project }: CanvasProps) {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
     const canvasRef = useRef<HTMLDivElement>(null)
 
+    // Expose selected element to parent
+    const selectedElementData = selectedElement ? elements.find(el => el.id === selectedElement) : null
+
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
@@ -53,7 +56,9 @@ export function Canvas({ project: _project }: CanvasProps) {
                     y: y - 25,
                     width: 100,
                     height: 50,
-                    props: data.props || {}
+                    props: data.props || {},
+                    className: data.props?.className || '',
+                    children: data.props?.children || ''
                 }
 
                 // Add to local state
@@ -66,6 +71,8 @@ export function Canvas({ project: _project }: CanvasProps) {
                         type: newElement.type,
                         name: newElement.name,
                         props: newElement.props,
+                        className: newElement.className,
+                        children: newElement.children,
                         position: {
                             x: newElement.x,
                             y: newElement.y,
