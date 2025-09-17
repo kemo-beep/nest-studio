@@ -601,6 +601,11 @@ var NestStudioApp = class {
     }
     mainWindow.webContents.on("did-finish-load", () => {
       console.log("Page finished loading");
+      mainWindow?.webContents.executeJavaScript(`
+                console.log('Testing preload script...')
+                console.log('window.electronAPI:', window.electronAPI)
+                console.log('dialog available:', !!window.electronAPI?.dialog?.openDirectory)
+            `);
     });
     mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
       console.error("Page failed to load:", errorCode, errorDescription);
@@ -703,14 +708,23 @@ var NestStudioApp = class {
       }
     });
     import_electron.ipcMain.handle("dialog:openDirectory", async () => {
-      const result = await import_electron.dialog.showOpenDialog(mainWindow, {
-        properties: ["openDirectory"],
-        title: "Select Project Directory"
-      });
-      if (!result.canceled && result.filePaths.length > 0) {
-        return { success: true, data: result.filePaths[0] };
+      console.log("Dialog: openDirectory called");
+      try {
+        const result = await import_electron.dialog.showOpenDialog(mainWindow, {
+          properties: ["openDirectory"],
+          title: "Select Project Directory"
+        });
+        console.log("Dialog result:", result);
+        if (!result.canceled && result.filePaths.length > 0) {
+          console.log("Directory selected:", result.filePaths[0]);
+          return { success: true, data: result.filePaths[0] };
+        }
+        console.log("No directory selected");
+        return { success: false, error: "No directory selected" };
+      } catch (error) {
+        console.error("Dialog error:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
-      return { success: false, error: "No directory selected" };
     });
     import_electron.ipcMain.handle("app:getVersion", () => {
       return import_electron.app.getVersion();

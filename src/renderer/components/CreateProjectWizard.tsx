@@ -49,9 +49,23 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
 
     const handleDirectorySelect = async () => {
         try {
+            console.log('Opening directory dialog...')
+            console.log('window.electronAPI:', window.electronAPI)
+            console.log('dialog:', window.electronAPI?.dialog)
+
+            if (!window.electronAPI?.dialog?.openDirectory) {
+                console.error('Dialog API not available')
+                return
+            }
+
             const result = await window.electronAPI.dialog.openDirectory()
+            console.log('Dialog result:', result)
+
             if (result.success) {
                 setFormData(prev => ({ ...prev, directory: result.data }))
+                console.log('Directory set to:', result.data)
+            } else {
+                console.error('Dialog failed:', result.error)
             }
         } catch (error) {
             console.error('Failed to select directory:', error)
@@ -131,7 +145,10 @@ export function CreateProjectWizard({ onClose, onCreateProject }: CreateProjectW
                                     />
                                     <button
                                         type="button"
-                                        onClick={handleDirectorySelect}
+                                        onClick={() => {
+                                            console.log('Browse button clicked!')
+                                            handleDirectorySelect()
+                                        }}
                                         className="px-4 py-2 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500"
                                     >
                                         Browse
