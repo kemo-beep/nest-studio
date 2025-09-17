@@ -106,6 +106,10 @@ class FileSystemService extends events_1.EventEmitter {
             this.watchers.delete(projectPath);
         }
     }
+    async stopWatching() {
+        const unwatchPromises = Array.from(this.watchers.keys()).map(path => this.unwatchProject(path));
+        await Promise.all(unwatchPromises);
+    }
     async stopAllWatchers() {
         const promises = Array.from(this.watchers.values()).map(watcher => watcher.close());
         await Promise.all(promises);

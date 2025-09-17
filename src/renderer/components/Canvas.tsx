@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ProjectInfo } from '@/shared/types'
+import { RealComponentRenderer } from './RealComponentRenderer'
 
 interface CanvasProps {
     project: ProjectInfo
@@ -14,6 +15,8 @@ interface CanvasElement {
     width: number
     height: number
     props: Record<string, any>
+    className?: string
+    children?: string
 }
 
 export function Canvas({ project: _project }: CanvasProps) {
@@ -29,7 +32,7 @@ export function Canvas({ project: _project }: CanvasProps) {
         e.dataTransfer.dropEffect = 'copy'
     }
 
-    const handleDrop = (e: React.DragEvent) => {
+    const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault()
 
         try {
@@ -50,10 +53,32 @@ export function Canvas({ project: _project }: CanvasProps) {
                     y: y - 25,
                     width: 100,
                     height: 50,
-                    props: {}
+                    props: data.props || {}
                 }
 
+                // Add to local state
                 setElements(prev => [...prev, newElement])
+
+                // Sync to file system
+                if (window.electronAPI?.sync?.addComponent) {
+                    const componentNode = {
+                        id: newElement.id,
+                        type: newElement.type,
+                        name: newElement.name,
+                        props: newElement.props,
+                        position: {
+                            x: newElement.x,
+                            y: newElement.y,
+                            width: newElement.width,
+                            height: newElement.height
+                        }
+                    }
+
+                    const result = await window.electronAPI.sync.addComponent(componentNode)
+                    if (!result.success) {
+                        console.error('Failed to sync component to file:', result.error)
+                    }
+                }
             }
         } catch (error) {
             console.error('Failed to handle drop:', error)
@@ -156,14 +181,30 @@ export function Canvas({ project: _project }: CanvasProps) {
 
                 {/* Canvas Elements */}
                 {elements.map(element => (
-                    <CanvasElement
+                    <RealComponentRenderer
                         key={element.id}
-                        element={element}
+                        component={{
+                            id: element.id,
+                            type: element.type,
+                            props: element.props,
+                            className: element.className,
+                            children: element.children,
+                            position: {
+                                x: element.x,
+                                y: element.y,
+                                width: element.width,
+                                height: element.height
+                            }
+                        }}
                         isSelected={selectedElement === element.id}
-                        isHovered={hoveredElement === element.id}
-                        onMouseDown={(e) => handleElementMouseDown(element.id, e)}
-                        onMouseEnter={() => setHoveredElement(element.id)}
-                        onMouseLeave={() => setHoveredElement(null)}
+                        onSelect={() => setSelectedElement(element.id)}
+                        onUpdate={(updates) => {
+                            setElements(prev => prev.map(el =>
+                                el.id === element.id
+                                    ? { ...el, ...updates }
+                                    : el
+                            ))
+                        }}
                     />
                 ))}
 
@@ -190,61 +231,3 @@ export function Canvas({ project: _project }: CanvasProps) {
     )
 }
 
-interface CanvasElementProps {
-    element: CanvasElement
-    isSelected: boolean
-    isHovered: boolean
-    onMouseDown: (e: React.MouseEvent) => void
-    onMouseEnter: () => void
-    onMouseLeave: () => void
-}
-
-function CanvasElement({
-    element,
-    isSelected,
-    isHovered,
-    onMouseDown,
-    onMouseEnter,
-    onMouseLeave
-}: CanvasElementProps) {
-    return (
-        <div
-            className={`absolute border-2 rounded-lg cursor-move transition-all ${isSelected
-                ? 'border-blue-500 shadow-lg'
-                : isHovered
-                    ? 'border-gray-400'
-                    : 'border-transparent hover:border-gray-300'
-                }`}
-            style={{
-                left: element.x,
-                top: element.y,
-                width: element.width,
-                height: element.height
-            }}
-            onMouseDown={onMouseDown}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-        >
-            {/* Element Content */}
-            <div className="w-full h-full bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600 flex items-center justify-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {element.name}
-                </span>
-            </div>
-
-            {/* Resize Handles */}
-            {isSelected && (
-                <>
-                    <div className="resize-handle resize-handle-n"></div>
-                    <div className="resize-handle resize-handle-s"></div>
-                    <div className="resize-handle resize-handle-e"></div>
-                    <div className="resize-handle resize-handle-w"></div>
-                    <div className="resize-handle resize-handle-ne"></div>
-                    <div className="resize-handle resize-handle-nw"></div>
-                    <div className="resize-handle resize-handle-se"></div>
-                    <div className="resize-handle resize-handle-sw"></div>
-                </>
-            )}
-        </div>
-    )
-}

@@ -63,7 +63,12 @@ const components: ComponentItem[] = [
         category: 'Form',
         description: 'Interactive button element',
         icon: '🔘',
-        props: { className: 'px-4 py-2 bg-blue-600 text-white rounded', children: 'Button' }
+        props: {
+            variant: 'default',
+            size: 'default',
+            disabled: false,
+            children: 'Button'
+        }
     },
     {
         id: 'input',
@@ -71,7 +76,12 @@ const components: ComponentItem[] = [
         category: 'Form',
         description: 'Text input field',
         icon: '📝',
-        props: { className: 'px-3 py-2 border rounded', placeholder: 'Enter text...' }
+        props: {
+            type: 'text',
+            placeholder: 'Enter text...',
+            disabled: false,
+            required: false
+        }
     },
     {
         id: 'textarea',
@@ -182,6 +192,52 @@ const components: ComponentItem[] = [
         description: 'Ordered list',
         icon: '🔢',
         props: { className: 'list-decimal list-inside', children: 'List Item' }
+    },
+
+    // UI Components (for real rendering)
+    {
+        id: 'card',
+        name: 'Card',
+        category: 'UI',
+        description: 'Card container component',
+        icon: '🃏',
+        props: {
+            title: 'Card Title',
+            description: 'Card description',
+            children: 'Card content'
+        }
+    },
+    {
+        id: 'badge',
+        name: 'Badge',
+        category: 'UI',
+        description: 'Badge element',
+        icon: '🏷️',
+        props: {
+            variant: 'default',
+            children: 'Badge'
+        }
+    },
+    {
+        id: 'avatar',
+        name: 'Avatar',
+        category: 'UI',
+        description: 'User avatar',
+        icon: '👤',
+        props: {
+            fallback: 'JD',
+            alt: 'User avatar'
+        }
+    },
+    {
+        id: 'container',
+        name: 'Container',
+        category: 'UI',
+        description: 'Generic container',
+        icon: '📦',
+        props: {
+            children: 'Container content'
+        }
     }
 ]
 
@@ -234,8 +290,8 @@ export function ComponentLibrary({ project: _project }: ComponentLibraryProps) {
                             key={category}
                             onClick={() => setSelectedCategory(category)}
                             className={`px-2 py-1 text-xs rounded-full transition-colors ${selectedCategory === category
-                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                 }`}
                         >
                             {category}

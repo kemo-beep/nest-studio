@@ -23,14 +23,10 @@ export class DevServerService extends EventEmitter {
                 // Find available port
                 const port = this.findAvailablePort()
 
-                // Start Next.js dev server
-                this.process = spawn('npm', ['run', 'dev'], {
+                // Start Next.js dev server with specific port
+                this.process = spawn('npx', ['next', 'dev', '--port', port.toString()], {
                     cwd: projectPath,
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                    env: {
-                        ...process.env,
-                        PORT: port.toString()
-                    }
+                    stdio: ['pipe', 'pipe', 'pipe']
                 })
 
                 this.process.on('error', (error) => {
@@ -115,9 +111,9 @@ export class DevServerService extends EventEmitter {
     }
 
     private findAvailablePort(): number {
-        // Start from port 3000 and find an available one
-        let port = 3000
-        const maxPort = 3100
+        // Start from port 5002 to avoid conflict with Nest Studio (port 5000)
+        let port = 5002
+        const maxPort = 5010
 
         while (port <= maxPort) {
             try {

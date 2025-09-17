@@ -3,7 +3,7 @@ import { ProjectInfo } from '@/shared/types'
 import { Sidebar } from './Sidebar'
 import { Canvas } from './Canvas'
 import { PropertiesPanel } from './PropertiesPanel'
-import { PreviewWindow } from './PreviewWindow'
+import { PreviewPanel } from './PreviewPanel'
 
 interface LayoutProps {
     project: ProjectInfo
@@ -112,26 +112,15 @@ export function Layout({ project }: LayoutProps) {
                 <PropertiesPanel project={project} />
             </div>
 
-            {/* Preview Window */}
+            {/* Preview Panel */}
             {showPreview && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-4/5 h-4/5 max-w-6xl">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Live Preview
-                            </h3>
-                            <button
-                                onClick={() => setShowPreview(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="h-full p-4">
-                            <PreviewWindow project={project} />
-                        </div>
+                        <PreviewPanel
+                            project={project}
+                            isVisible={showPreview}
+                            onToggle={() => setShowPreview(false)}
+                        />
                     </div>
                 </div>
             )}

@@ -80,6 +80,11 @@ export class FileSystemService extends EventEmitter {
         }
     }
 
+    async stopWatching(): Promise<void> {
+        const unwatchPromises = Array.from(this.watchers.keys()).map(path => this.unwatchProject(path))
+        await Promise.all(unwatchPromises)
+    }
+
     async stopAllWatchers(): Promise<void> {
         const promises = Array.from(this.watchers.values()).map(watcher => watcher.close())
         await Promise.all(promises)

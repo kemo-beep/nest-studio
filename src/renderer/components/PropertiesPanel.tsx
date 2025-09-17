@@ -1,12 +1,69 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ProjectInfo } from '@/shared/types'
+import { DynamicPropsEditor } from './DynamicPropsEditor'
+import { TailwindClassesEditor } from './TailwindClassesEditor'
+
+interface PageElement {
+    id: string
+    type: string
+    name: string
+    props: Record<string, any>
+    children: PageElement[]
+    position: {
+        x: number
+        y: number
+        width: number
+        height: number
+    }
+    className?: string
+    content?: string
+}
 
 interface PropertiesPanelProps {
     project: ProjectInfo
+    selectedElement?: PageElement | null
+    onElementUpdate?: (elementId: string, updates: Partial<PageElement>) => void
 }
 
-export function PropertiesPanel({ project }: PropertiesPanelProps) {
+export function PropertiesPanel({ project, selectedElement, onElementUpdate }: PropertiesPanelProps) {
     const [activeTab, setActiveTab] = useState<'props' | 'styles' | 'layout' | 'responsive'>('props')
+    const [selectedComponent, setSelectedComponent] = useState<string | null>(null)
+    const [componentSchema, setComponentSchema] = useState<any>(null)
+    const [componentProps, setComponentProps] = useState<Record<string, any>>({})
+
+    // Load component schema when component changes
+    useEffect(() => {
+        if (selectedComponent && window.electronAPI?.schema?.getSchema) {
+            window.electronAPI.schema.getSchema(selectedComponent).then(result => {
+                if (result.success && result.data) {
+                    setComponentSchema(result.data)
+                    // Load default props
+                    if (window.electronAPI?.schema?.getDefaultProps) {
+                        window.electronAPI.schema.getDefaultProps(selectedComponent).then(defaultResult => {
+                            if (defaultResult.success && defaultResult.data) {
+                                setComponentProps(defaultResult.data)
+                            }
+                        })
+                    }
+                }
+            })
+        }
+    }, [selectedComponent])
+
+    // Update selected component when element changes
+    useEffect(() => {
+        if (selectedElement) {
+            setSelectedComponent(selectedElement.type)
+            setComponentProps(selectedElement.props)
+        }
+    }, [selectedElement])
+
+    const handlePropsChange = (newProps: Record<string, any>) => {
+        setComponentProps(newProps)
+        if (selectedElement && onElementUpdate) {
+            onElementUpdate(selectedElement.id, { props: newProps })
+        }
+    }
 
     return (
         <div className="h-full flex flex-col">
@@ -52,7 +109,48 @@ export function PropertiesPanel({ project }: PropertiesPanelProps) {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto">
-                {activeTab === 'props' && <PropsEditor project={project} />}
+                {activeTab === 'props' && (
+                    <div className="space-y-4">
+                        {/* Selected Element Info */}
+                        {selectedElement ? (
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Selected Element
+                                </h3>
+                                <div className="space-y-2">
+                                    <div className="text-sm">
+                                        <span className="font-medium">Type:</span> {selectedElement.type}
+                                    </div>
+                                    <div className="text-sm">
+                                        <span className="font-medium">ID:</span> {selectedElement.id}
+                                    </div>
+                                    {selectedElement.className && (
+                                        <div className="text-sm">
+                                            <span className="font-medium">Classes:</span> {selectedElement.className}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                                <div className="text-center text-gray-500 dark:text-gray-400">
+                                    <div className="text-2xl mb-2">👆</div>
+                                    <p className="text-sm">Click on an element to edit its properties</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Dynamic Props Editor */}
+                        {selectedComponent && (
+                            <DynamicPropsEditor
+                                componentName={selectedComponent}
+                                componentSchema={componentSchema}
+                                currentProps={componentProps}
+                                onPropsChange={handlePropsChange}
+                            />
+                        )}
+                    </div>
+                )}
                 {activeTab === 'styles' && <StylesEditor project={project} />}
                 {activeTab === 'layout' && <LayoutEditor project={project} />}
                 {activeTab === 'responsive' && <ResponsiveEditor project={project} />}
@@ -135,16 +233,11 @@ function StylesEditor({ project: _project }: { project: ProjectInfo }) {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Tailwind Classes
                     </label>
-                    <input
-                        type="text"
+                    <TailwindClassesEditor
                         value={tailwindClasses}
-                        onChange={(e) => setTailwindClasses(e.target.value)}
+                        onChange={setTailwindClasses}
                         placeholder="bg-blue-500 text-white px-4 py-2"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Enter Tailwind CSS classes separated by spaces
-                    </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

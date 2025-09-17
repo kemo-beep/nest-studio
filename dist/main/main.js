@@ -8,14 +8,22 @@ const path_1 = __importDefault(require("path"));
 const ProjectService_1 = require("./services/ProjectService");
 const FileSystemService_1 = require("./services/FileSystemService");
 const DevServerService_1 = require("./services/DevServerService");
+const CodeGenerationService_1 = require("./services/CodeGenerationService");
+const SyncService_1 = require("./services/SyncService");
+const ComponentSchemaService_1 = require("./services/ComponentSchemaService");
+const TailwindService_1 = require("./services/TailwindService");
 // Keep a global reference of the window object
 let mainWindow = null;
 const isDev = process.env.NODE_ENV === 'development';
 class NestStudioApp {
     constructor() {
+        this.codeGenerationService = null;
+        this.syncService = null;
         this.projectService = new ProjectService_1.ProjectService();
         this.fileSystemService = new FileSystemService_1.FileSystemService();
         this.devServerService = new DevServerService_1.DevServerService();
+        this.componentSchemaService = new ComponentSchemaService_1.ComponentSchemaService();
+        this.tailwindService = new TailwindService_1.TailwindService();
         this.setupApp();
         this.setupIPC();
     }
@@ -57,18 +65,20 @@ class NestStudioApp {
         });
         // Load the app
         if (isDev) {
-            // Try port 3000 first, then 3001 if 3000 is busy
+            // Try port 5000 first, then 5001 if 5000 is busy
             const tryLoadDev = async () => {
                 try {
-                    console.log('Trying to load development URL: http://localhost:3000');
-                    await mainWindow.loadURL('http://localhost:3000');
-                    console.log('Successfully loaded from port 3000');
+                    console.log('Trying to load development URL: http://localhost:5000');
+                    await mainWindow.loadURL('http://localhost:5000');
+                    console.log('Successfully loaded from port 5000');
+                    mainWindow.show(); // Show the window after loading
                 }
                 catch (error) {
                     try {
-                        console.log('Port 3000 failed, trying port 3001...');
-                        await mainWindow.loadURL('http://localhost:3001');
-                        console.log('Successfully loaded from port 3001');
+                        console.log('Port 5000 failed, trying port 5001...');
+                        await mainWindow.loadURL('http://localhost:5001');
+                        console.log('Successfully loaded from port 5001');
+                        mainWindow.show(); // Show the window after loading
                     }
                     catch (error2) {
                         console.error('Failed to load from both ports:', error2);
@@ -76,6 +86,7 @@ class NestStudioApp {
                         const htmlPath = path_1.default.join(__dirname, 'index.html');
                         console.log('Falling back to production file:', htmlPath);
                         mainWindow.loadFile(htmlPath);
+                        mainWindow.show(); // Show the window after loading
                     }
                 }
             };
@@ -87,6 +98,7 @@ class NestStudioApp {
             const htmlPath = path_1.default.join(__dirname, 'index.html');
             console.log('Loading production file:', htmlPath);
             mainWindow.loadFile(htmlPath);
+            mainWindow.show(); // Show the window after loading
         }
         // Handle page load events
         mainWindow.webContents.on('did-finish-load', () => {
@@ -253,6 +265,255 @@ class NestStudioApp {
         });
         electron_1.ipcMain.handle('app:getPath', (_, name) => {
             return electron_1.app.getPath(name);
+        });
+        // Code Generation IPC handlers
+        electron_1.ipcMain.handle('codegen:parseFile', async (_, filePath) => {
+            try {
+                if (!this.codeGenerationService) {
+                    return { success: false, error: 'Code generation service not initialized' };
+                }
+                const result = await this.codeGenerationService.parseFile(filePath);
+                return result;
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('codegen:generateJSX', async (_, nodes) => {
+            try {
+                if (!this.codeGenerationService) {
+                    return { success: false, error: 'Code generation service not initialized' };
+                }
+                const jsx = this.codeGenerationService.generateJSXFromNodes(nodes);
+                return { success: true, data: jsx };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('codegen:createComponentFile', async (_, componentName, content, directory) => {
+            try {
+                if (!this.codeGenerationService) {
+                    return { success: false, error: 'Code generation service not initialized' };
+                }
+                const result = await this.codeGenerationService.createComponentFile(componentName, content, directory);
+                return result;
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        // Sync Service IPC handlers
+        electron_1.ipcMain.handle('sync:start', async (_, projectPath) => {
+            try {
+                this.syncService = new SyncService_1.SyncService(projectPath);
+                this.codeGenerationService = new CodeGenerationService_1.CodeGenerationService(projectPath);
+                await this.syncService.startWatching();
+                return { success: true };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('sync:stop', async () => {
+            try {
+                if (this.syncService) {
+                    await this.syncService.stopWatching();
+                }
+                return { success: true };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('sync:addComponent', async (_, component, targetFile) => {
+            try {
+                if (!this.syncService) {
+                    return { success: false, error: 'Sync service not initialized' };
+                }
+                const result = await this.syncService.addComponent(component, targetFile);
+                return { success: result };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('sync:updateComponent', async (_, componentId, updates) => {
+            try {
+                if (!this.syncService) {
+                    return { success: false, error: 'Sync service not initialized' };
+                }
+                const result = await this.syncService.updateComponent(componentId, updates);
+                return { success: result };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('sync:removeComponent', async (_, componentId) => {
+            try {
+                if (!this.syncService) {
+                    return { success: false, error: 'Sync service not initialized' };
+                }
+                const result = await this.syncService.removeComponent(componentId);
+                return { success: result };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('sync:getComponents', async () => {
+            try {
+                if (!this.syncService) {
+                    return { success: false, error: 'Sync service not initialized' };
+                }
+                const components = this.syncService.getComponents();
+                return { success: true, data: components };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('sync:getProjectState', async () => {
+            try {
+                if (!this.syncService) {
+                    return { success: false, error: 'Sync service not initialized' };
+                }
+                const state = this.syncService.getProjectState();
+                return { success: true, data: state };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        // Component Schema IPC handlers
+        electron_1.ipcMain.handle('schema:getSchema', async (_, componentName) => {
+            try {
+                const schema = this.componentSchemaService.getSchema(componentName);
+                return { success: true, data: schema };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('schema:getAllSchemas', async () => {
+            try {
+                const schemas = this.componentSchemaService.getAllSchemas();
+                return { success: true, data: schemas };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('schema:getSchemasByCategory', async (_, category) => {
+            try {
+                const schemas = this.componentSchemaService.getSchemasByCategory(category);
+                return { success: true, data: schemas };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('schema:validateProp', async (_, propSchema, value) => {
+            try {
+                const result = this.componentSchemaService.validateProp(propSchema, value);
+                return { success: true, data: result };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('schema:getDefaultProps', async (_, componentName) => {
+            try {
+                const defaultProps = this.componentSchemaService.getDefaultProps(componentName);
+                return { success: true, data: defaultProps };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        // Tailwind Service IPC handlers
+        electron_1.ipcMain.handle('tailwind:getAllClasses', async () => {
+            try {
+                const classes = this.tailwindService.getAllClasses();
+                return { success: true, data: classes };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:getClassesByCategory', async (_, category) => {
+            try {
+                const classes = this.tailwindService.getClassesByCategory(category);
+                return { success: true, data: classes };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:getCategories', async () => {
+            try {
+                const categories = this.tailwindService.getCategories();
+                return { success: true, data: categories };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:searchClasses', async (_, query, limit) => {
+            try {
+                const suggestions = this.tailwindService.searchClasses(query, limit);
+                return { success: true, data: suggestions };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:validateClass', async (_, className) => {
+            try {
+                const result = this.tailwindService.validateClass(className);
+                return { success: true, data: result };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:validateClassString', async (_, classString) => {
+            try {
+                const result = this.tailwindService.validateClassString(classString);
+                return { success: true, data: result };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:getResponsiveVariants', async (_, className) => {
+            try {
+                const variants = this.tailwindService.getResponsiveVariants(className);
+                return { success: true, data: variants };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        electron_1.ipcMain.handle('tailwind:getStateVariants', async (_, className) => {
+            try {
+                const variants = this.tailwindService.getStateVariants(className);
+                return { success: true, data: variants };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
+        // Shell IPC handlers
+        electron_1.ipcMain.handle('shell:openExternal', async (_, url) => {
+            try {
+                await electron_1.shell.openExternal(url);
+                return { success: true };
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
         });
     }
 }

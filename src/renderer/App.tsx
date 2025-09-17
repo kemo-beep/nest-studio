@@ -45,17 +45,50 @@ function App() {
         initializeApp()
     }, [])
 
-    const handleProjectCreated = (project: any) => {
+    const handleProjectCreated = async (project: any) => {
         setCurrentProject(project)
         localStorage.setItem('nest-studio-recent-project', JSON.stringify(project))
+
+        // Initialize sync service for the new project
+        if (window.electronAPI?.sync?.start) {
+            try {
+                const result = await window.electronAPI.sync.start(project.path)
+                if (!result.success) {
+                    console.error('Failed to start sync service:', result.error)
+                }
+            } catch (error) {
+                console.error('Failed to initialize sync service:', error)
+            }
+        }
     }
 
-    const handleProjectImported = (project: any) => {
+    const handleProjectImported = async (project: any) => {
         setCurrentProject(project)
         localStorage.setItem('nest-studio-recent-project', JSON.stringify(project))
+
+        // Initialize sync service for the imported project
+        if (window.electronAPI?.sync?.start) {
+            try {
+                const result = await window.electronAPI.sync.start(project.path)
+                if (!result.success) {
+                    console.error('Failed to start sync service:', result.error)
+                }
+            } catch (error) {
+                console.error('Failed to initialize sync service:', error)
+            }
+        }
     }
 
-    const handleProjectClosed = () => {
+    const handleProjectClosed = async () => {
+        // Stop sync service
+        if (window.electronAPI?.sync?.stop) {
+            try {
+                await window.electronAPI.sync.stop()
+            } catch (error) {
+                console.error('Failed to stop sync service:', error)
+            }
+        }
+
         setCurrentProject(null)
         localStorage.removeItem('nest-studio-recent-project')
     }
