@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ProjectInfo } from '@/shared/types'
 import { TailwindClassesEditor } from './TailwindClassesEditor'
 
@@ -8,6 +8,12 @@ interface PageElement {
     name: string
     props: Record<string, any>
     children: PageElement[]
+    position: {
+        x: number
+        y: number
+        width: number
+        height: number
+    }
     path: number[]
     className?: string
     content?: string
@@ -19,7 +25,7 @@ interface PropertiesPanelProps {
     onElementUpdate?: (elementId: string, updates: Partial<PageElement>) => void
 }
 
-export function PropertiesPanel({ project, selectedElement, onElementUpdate }: PropertiesPanelProps) {
+export function PropertiesPanel({ selectedElement, onElementUpdate }: PropertiesPanelProps) {
     const [activeTab, setActiveTab] = useState<'styles' | 'props'>('styles')
 
     const handlePropChange = (propName: string, propValue: any) => {
@@ -54,20 +60,18 @@ export function PropertiesPanel({ project, selectedElement, onElementUpdate }: P
             <div className="flex border-b border-gray-200 dark:border-gray-700">
                 <button
                     onClick={() => setActiveTab('styles')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium ${
-                        activeTab === 'styles'
-                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    className={`flex-1 px-3 py-2 text-sm font-medium ${activeTab === 'styles'
+                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                 >
                     Styles
                 </button>
                 <button
                     onClick={() => setActiveTab('props')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium ${
-                        activeTab === 'props'
-                            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    className={`flex-1 px-3 py-2 text-sm font-medium ${activeTab === 'props'
+                        ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                         }`}
                 >
                     Attributes

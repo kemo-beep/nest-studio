@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ProjectInfo } from '@/shared/types'
 import { ProjectExplorer, ProjectFile } from './ProjectExplorer'
 import { PageEditor } from './PageEditor'
@@ -19,6 +19,7 @@ interface PageElement {
         width: number
         height: number
     }
+    path: number[]
     className?: string
     content?: string
 }
@@ -41,8 +42,8 @@ interface NewLayoutProps {
 export function NewLayout({ project }: NewLayoutProps) {
     const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null)
     const [selectedElement, setSelectedElement] = useState<PageElement | null>(null)
-    const [devServerStatus, setDevServerStatus] = useState<'stopped' | 'starting' | 'running' | 'error'>('stopped')
-    const [devServerError, setDevServerError] = useState<string | null>(null)
+    const [, setDevServerStatus] = useState<'stopped' | 'starting' | 'running' | 'error'>('stopped')
+    const [, setDevServerError] = useState<string | null>(null)
     const [devServerUrl, setDevServerUrl] = useState<string | null>(null)
     const [showComponentLibrary, setShowComponentLibrary] = useState(true)
     const [showPreview, setShowPreview] = useState(false)
@@ -112,6 +113,7 @@ export function NewLayout({ project }: NewLayoutProps) {
     }
 
     const handleElementSelect = (element: PageElement) => {
+        console.log('NewLayout: Element selected:', element)
         setSelectedElement(element)
     }
 
@@ -234,11 +236,8 @@ export function NewLayout({ project }: NewLayoutProps) {
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-4/5 h-4/5 max-w-6xl">
                         <PreviewPanel
                             project={project}
-                            devServerUrl={devServerUrl}
-                            devServerStatus={devServerStatus}
-                            devServerError={devServerError}
-                            onDevServerStatusChange={setDevServerStatus}
-                            onDevServerErrorChange={setDevServerError}
+                            isVisible={showPreview}
+                            onToggle={() => setShowPreview(false)}
                         />
                     </div>
                 </div>
