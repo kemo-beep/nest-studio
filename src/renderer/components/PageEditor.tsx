@@ -88,81 +88,96 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
         const iframe = iframeRef.current
         if (!iframe?.contentWindow) return
 
-        const script = iframe.contentWindow.document.createElement('script')
-        script.textContent = `
-            (function() {
-                let overlay = null;
+        setTimeout(() => {
+            if (!iframe?.contentWindow) return
 
-                function createOverlay() {
-                    const el = document.createElement('div');
-                    el.style.position = 'absolute';
-                    el.style.border = '2px solid #3b82f6';
-                    el.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
-                    el.style.pointerEvents = 'none';
-                    el.style.zIndex = '9999';
-                    el.style.transition = 'all 0.1s ease-in-out';
-                    document.body.appendChild(el);
-                    return el;
-                }
-
-                function getElementById(id) {
-                    return document.querySelector('[data-element-id="' + id + '"]');
-                }
-
-                function highlightElement(element) {
-                    if (!overlay) {
-                        overlay = createOverlay();
-                    }
-                    if (element) {
-                        const rect = element.getBoundingClientRect();
-                        overlay.style.width = rect.width + 'px';
-                        overlay.style.height = rect.height + 'px';
-                        overlay.style.top = rect.top + window.scrollY + 'px';
-                        overlay.style.left = rect.left + window.scrollX + 'px';
-                        overlay.style.display = 'block';
-                    } else {
-                        overlay.style.display = 'none';
-                    }
-                }
-
-                document.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const element = e.target.closest('[data-element-id]');
-                    if (!element) return;
-
-                    const id = element.getAttribute('data-element-id');
-                    const props = {};
-                    for (const attr of element.attributes) {
-                        props[attr.name] = attr.value;
-                    }
-
-                    window.parent.postMessage({
-                        type: 'element-selected',
-                        payload: {
-                            id: id,
-                            name: element.tagName.toLowerCase(),
-                            type: element.tagName.toLowerCase(),
-                            props: props,
-                            className: element.className,
-                            content: element.innerText,
+            const script = iframe.contentWindow.document.createElement('script')
+            script.textContent = `
+                (function() {
+                    let idCounter = 0;
+                    function injectIds(element) {
+                        if (!element.hasAttribute('data-element-id')) {
+                            element.setAttribute('data-element-id', 'el-' + idCounter++);
                         }
-                    }, '*');
-                    
-                    highlightElement(element);
-                }, true);
-
-                window.addEventListener('message', (event) => {
-                    const { type, payload } = event.data;
-                    if (type === 'highlight-element') {
-                        const elementToHighlight = getElementById(payload.id);
-                        highlightElement(elementToHighlight);
+                        for (const child of element.children) {
+                            injectIds(child);
+                        }
                     }
-                });
-            })();
-        `
-        iframe.contentWindow.document.body.appendChild(script)
+                    injectIds(document.body);
+
+                    let overlay = null;
+
+                    function createOverlay() {
+                        const el = document.createElement('div');
+                        el.style.position = 'absolute';
+                        el.style.border = '2px solid #3b82f6';
+                        el.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                        el.style.pointerEvents = 'none';
+                        el.style.zIndex = '9999';
+                        el.style.transition = 'all 0.1s ease-in-out';
+                        document.body.appendChild(el);
+                        return el;
+                    }
+
+                    function getElementById(id) {
+                        return document.querySelector('[data-element-id="' + id + '"]');
+                    }
+
+                    function highlightElement(element) {
+                        if (!overlay) {
+                            overlay = createOverlay();
+                        }
+                        if (element) {
+                            const rect = element.getBoundingClientRect();
+                            overlay.style.width = rect.width + 'px';
+                            overlay.style.height = rect.height + 'px';
+                            overlay.style.top = rect.top + window.scrollY + 'px';
+                            overlay.style.left = rect.left + window.scrollX + 'px';
+                            overlay.style.display = 'block';
+                        } else {
+                            overlay.style.display = 'none';
+                        }
+                    }
+
+                    document.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const element = e.target.closest('[data-element-id]');
+                        if (!element) return;
+
+                        const id = element.getAttribute('data-element-id');
+                        const props = {};
+                        for (const attr of element.attributes) {
+                            props[attr.name] = attr.value;
+                        }
+
+                        window.parent.postMessage({
+                            type: 'element-selected',
+                            payload: {
+                                id: id,
+                                name: element.tagName.toLowerCase(),
+                                type: element.tagName.toLowerCase(),
+                                props: props,
+                                className: element.className,
+                                content: element.innerText,
+                            }
+                        }, '*');
+                        
+                        highlightElement(element);
+                    }, true);
+
+                    window.addEventListener('message', (event) => {
+                        const { type, payload } = event.data;
+                        if (type === 'highlight-element') {
+                            const elementToHighlight = getElementById(payload.id);
+                            highlightElement(elementToHighlight);
+                        }
+                    });
+                })();
+            `
+            iframe.contentWindow.document.body.appendChild(script)
+        }, 1000)
     }
 
     if (loading) {
