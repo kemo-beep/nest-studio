@@ -28,11 +28,35 @@ function App() {
             try {
                 // Check if there's a recent project
                 const recentProject = localStorage.getItem('nest-studio-recent-project')
+                console.log('Recent project from localStorage:', recentProject)
+
                 if (recentProject) {
                     const project = JSON.parse(recentProject)
+                    console.log('Parsed project:', project)
                     // For now, just set the project without verification
                     // TODO: Add file existence check when fileExists is implemented
                     setCurrentProject(project)
+                } else {
+                    console.log('No recent project found in localStorage')
+                    // Force load the appy project for testing
+                    const appyProjectPath = '/Users/wonder/Documents/experimental/projecrs/appy'
+                    console.log('Force loading appy project:', appyProjectPath)
+
+                    // Create a basic project object without detection for now
+                    const project = {
+                        name: 'appy',
+                        path: appyProjectPath,
+                        nextjsVersion: '15.5.3',
+                        typescript: true,
+                        appRouter: true,
+                        tailwind: true,
+                        shadcn: false,
+                        eslint: true,
+                        prettier: false
+                    }
+                    console.log('Force loaded project:', project)
+                    setCurrentProject(project)
+                    localStorage.setItem('nest-studio-recent-project', JSON.stringify(project))
                 }
             } catch (err) {
                 console.error('Failed to initialize app:', err)

@@ -13,6 +13,9 @@ const electronAPI = {
     fs: {
         readFile: (filePath) => electron_1.ipcRenderer.invoke('fs:readFile', filePath),
         writeFile: (filePath, content) => electron_1.ipcRenderer.invoke('fs:writeFile', filePath, content),
+        readDirectory: (dirPath) => electron_1.ipcRenderer.invoke('fs:readDirectory', dirPath),
+        getFileStats: (filePath) => electron_1.ipcRenderer.invoke('fs:getFileStats', filePath),
+        createDirectory: (dirPath) => electron_1.ipcRenderer.invoke('fs:createDirectory', dirPath),
         watch: (projectPath) => electron_1.ipcRenderer.invoke('fs:watch', projectPath),
     },
     // Dev Server

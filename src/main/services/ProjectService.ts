@@ -4,295 +4,300 @@ import * as path from 'path'
 import { ProjectInfo, ProjectOptions } from '@/shared/types'
 
 export class ProjectService {
-    async createProject(options: ProjectOptions): Promise<ProjectInfo> {
-        console.log('=== PROJECT SERVICE DEBUG START ===')
-        console.log('Creating project with options:', options)
+  async createProject(options: ProjectOptions): Promise<ProjectInfo> {
+    console.log('=== PROJECT SERVICE DEBUG START ===')
+    console.log('Creating project with options:', options)
 
-        const {
-            name,
-            directory,
-            nextjsVersion = '15',
-            typescript = true,
-            appRouter = true,
-            tailwind = true,
-            shadcn = true,
-            eslint = true,
-            prettier = true
-        } = options
+    const {
+      name,
+      directory,
+      nextjsVersion = '15',
+      typescript = true,
+      appRouter = true,
+      tailwind = true,
+      shadcn = true,
+      eslint = true,
+      prettier = true
+    } = options
 
-        const projectPath = path.join(directory, name)
-        console.log('Project path:', projectPath)
+    const projectPath = path.join(directory, name)
+    console.log('Project path:', projectPath)
 
-        try {
-            // Create project directory
-            console.log('Creating project directory...')
-            await fs.mkdir(projectPath, { recursive: true })
-            console.log('Created project directory')
+    try {
+      // Create project directory
+      console.log('Creating project directory...')
+      await fs.mkdir(projectPath, { recursive: true })
+      console.log('Created project directory')
 
-            // Create Next.js project using create-next-app
-            console.log('Running create-next-app...')
-            await this.runCreateNextApp(projectPath, {
-                nextjsVersion,
-                typescript,
-                appRouter,
-                tailwind,
-                eslint,
-                prettier
-            })
-            console.log('create-next-app completed')
+      // Create Next.js project using create-next-app
+      console.log('Running create-next-app...')
+      await this.runCreateNextApp(projectPath, {
+        nextjsVersion,
+        typescript,
+        appRouter,
+        tailwind,
+        eslint,
+        prettier
+      })
+      console.log('create-next-app completed')
 
-            // Setup shadcn/ui if requested (skip for now to avoid interactive prompts)
-            if (shadcn) {
-                console.log('Skipping shadcn/ui setup to avoid interactive prompts')
-                console.log('shadcn/ui can be set up manually later if needed')
-            }
+      // Setup shadcn/ui if requested (skip for now to avoid interactive prompts)
+      if (shadcn) {
+        console.log('Skipping shadcn/ui setup to avoid interactive prompts')
+        console.log('shadcn/ui can be set up manually later if needed')
+      }
 
-            // Create additional project structure
-            console.log('Creating project structure...')
-            await this.createProjectStructure(projectPath, { typescript, appRouter })
-            console.log('Project structure created')
+      // Create additional project structure
+      console.log('Creating project structure...')
+      await this.createProjectStructure(projectPath, { typescript, appRouter })
+      console.log('Project structure created')
 
-            // Generate project info
-            console.log('Generating project info...')
-            const projectInfo = await this.generateProjectInfo(projectPath)
-            console.log('Project created successfully:', projectInfo)
-            console.log('=== PROJECT SERVICE DEBUG END ===')
+      // Generate project info
+      console.log('Generating project info...')
+      const projectInfo = await this.generateProjectInfo(projectPath)
+      console.log('Project created successfully:', projectInfo)
+      console.log('=== PROJECT SERVICE DEBUG END ===')
 
-            return projectInfo
-        } catch (error) {
-            console.error('Error creating project:', error)
-            throw error
-        }
+      return projectInfo
+    } catch (error) {
+      console.error('Error creating project:', error)
+      throw error
+    }
+  }
+
+  async importProject(projectPath: string): Promise<ProjectInfo> {
+    // Validate project path
+    if (!await this.isValidNextJSProject(projectPath)) {
+      throw new Error('Invalid Next.js project directory')
     }
 
-    async importProject(projectPath: string): Promise<ProjectInfo> {
-        // Validate project path
-        if (!await this.isValidNextJSProject(projectPath)) {
-            throw new Error('Invalid Next.js project directory')
-        }
+    // Detect project configuration
+    const projectInfo = await this.detectProject(projectPath)
 
-        // Detect project configuration
-        const projectInfo = await this.detectProject(projectPath)
+    return projectInfo
+  }
 
-        return projectInfo
+  async detectProject(projectPath: string): Promise<ProjectInfo> {
+    console.log('ProjectService: detectProject called with path:', projectPath)
+    const packageJsonPath = path.join(projectPath, 'package.json')
+    console.log('ProjectService: checking package.json at:', packageJsonPath)
+
+    if (!await this.fileExists(packageJsonPath)) {
+      console.log('ProjectService: package.json not found')
+      throw new Error('package.json not found')
     }
 
-    async detectProject(projectPath: string): Promise<ProjectInfo> {
-        const packageJsonPath = path.join(projectPath, 'package.json')
+    console.log('ProjectService: package.json found, reading...')
+    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
+    console.log('ProjectService: package.json contents:', packageJson)
 
-        if (!await this.fileExists(packageJsonPath)) {
-            throw new Error('package.json not found')
+    // Detect Next.js version
+    const nextVersion = this.extractNextJSVersion(packageJson.dependencies)
+
+    // Detect TypeScript
+    const typescript = this.hasTypeScript(packageJson)
+
+    // Detect App Router vs Pages Router
+    const appRouter = await this.hasAppRouter(projectPath)
+
+    // Detect Tailwind CSS
+    const tailwind = this.hasTailwindCSS(packageJson)
+
+    // Detect shadcn/ui
+    const shadcn = await this.hasShadcnUI(projectPath)
+
+    // Detect ESLint
+    const eslint = this.hasESLint(packageJson)
+
+    // Detect Prettier
+    const prettier = this.hasPrettier(packageJson)
+
+    return {
+      name: packageJson.name || path.basename(projectPath),
+      path: projectPath,
+      nextjsVersion: nextVersion,
+      typescript,
+      appRouter,
+      tailwind,
+      shadcn,
+      eslint,
+      prettier,
+      dependencies: packageJson.dependencies || {},
+      devDependencies: packageJson.devDependencies || {},
+      scripts: packageJson.scripts || {}
+    }
+  }
+
+  private async runCreateNextApp(projectPath: string, options: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      console.log('=== RUN CREATE NEXT APP DEBUG START ===')
+      console.log('Project path:', projectPath)
+      console.log('Options:', options)
+
+      // Use the project name as the directory name for create-next-app
+      const projectName = path.basename(projectPath)
+      const parentDir = path.dirname(projectPath)
+
+      const args = [
+        'create-next-app@latest',
+        projectName, // Use just the project name, not full path
+        '--typescript',
+        '--tailwind',
+        '--eslint',
+        '--app',
+        '--import-alias', '@/*',
+        '--yes' // Skip all prompts
+      ]
+
+      if (!options.typescript) {
+        args.splice(args.indexOf('--typescript'), 1)
+      }
+
+      if (!options.tailwind) {
+        args.splice(args.indexOf('--tailwind'), 1)
+      }
+
+      if (!options.eslint) {
+        args.splice(args.indexOf('--eslint'), 1)
+      }
+
+      if (!options.appRouter) {
+        args.splice(args.indexOf('--app'), 1)
+      }
+
+      console.log('Final args:', args)
+      console.log('Working directory:', parentDir)
+      console.log('Project name:', projectName)
+
+      const process = spawn('npx', args, {
+        stdio: 'pipe',
+        cwd: parentDir // Run in the parent directory
+      })
+
+      let output = ''
+      let errorOutput = ''
+
+      process.stdout?.on('data', (data) => {
+        const text = data.toString()
+        output += text
+        console.log('create-next-app stdout:', text)
+      })
+
+      process.stderr?.on('data', (data) => {
+        const text = data.toString()
+        errorOutput += text
+        console.log('create-next-app stderr:', text)
+      })
+
+      process.on('close', (code) => {
+        console.log('create-next-app process closed with code:', code)
+        console.log('Full output:', output)
+        if (errorOutput) {
+          console.log('Error output:', errorOutput)
         }
 
-        const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
-
-        // Detect Next.js version
-        const nextVersion = this.extractNextJSVersion(packageJson.dependencies)
-
-        // Detect TypeScript
-        const typescript = this.hasTypeScript(packageJson)
-
-        // Detect App Router vs Pages Router
-        const appRouter = await this.hasAppRouter(projectPath)
-
-        // Detect Tailwind CSS
-        const tailwind = this.hasTailwindCSS(packageJson)
-
-        // Detect shadcn/ui
-        const shadcn = await this.hasShadcnUI(projectPath)
-
-        // Detect ESLint
-        const eslint = this.hasESLint(packageJson)
-
-        // Detect Prettier
-        const prettier = this.hasPrettier(packageJson)
-
-        return {
-            name: packageJson.name || path.basename(projectPath),
-            path: projectPath,
-            nextjsVersion: nextVersion,
-            typescript,
-            appRouter,
-            tailwind,
-            shadcn,
-            eslint,
-            prettier,
-            dependencies: packageJson.dependencies || {},
-            devDependencies: packageJson.devDependencies || {},
-            scripts: packageJson.scripts || {}
+        if (code === 0) {
+          console.log('create-next-app completed successfully')
+          resolve()
+        } else {
+          console.error('create-next-app failed with code:', code)
+          reject(new Error(`create-next-app failed with code ${code}. Output: ${output}. Error: ${errorOutput}`))
         }
-    }
+      })
 
-    private async runCreateNextApp(projectPath: string, options: any): Promise<void> {
-        return new Promise((resolve, reject) => {
-            console.log('=== RUN CREATE NEXT APP DEBUG START ===')
-            console.log('Project path:', projectPath)
-            console.log('Options:', options)
+      process.on('error', (error) => {
+        console.error('create-next-app process error:', error)
+        reject(error)
+      })
 
-            // Use the project name as the directory name for create-next-app
-            const projectName = path.basename(projectPath)
-            const parentDir = path.dirname(projectPath)
+      console.log('=== RUN CREATE NEXT APP DEBUG END ===')
+    })
+  }
 
-            const args = [
-                'create-next-app@latest',
-                projectName, // Use just the project name, not full path
-                '--typescript',
-                '--tailwind',
-                '--eslint',
-                '--app',
-                '--import-alias', '@/*',
-                '--yes' // Skip all prompts
-            ]
+  private async setupShadcnUI(projectPath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      console.log('Setting up shadcn/ui...')
 
-            if (!options.typescript) {
-                args.splice(args.indexOf('--typescript'), 1)
-            }
+      // Use non-interactive mode with default answers
+      const process = spawn('npx', ['shadcn@latest', 'init', '-y', '--defaults'], {
+        stdio: 'pipe',
+        cwd: projectPath
+      })
 
-            if (!options.tailwind) {
-                args.splice(args.indexOf('--tailwind'), 1)
-            }
+      let output = ''
+      let errorOutput = ''
 
-            if (!options.eslint) {
-                args.splice(args.indexOf('--eslint'), 1)
-            }
+      process.stdout?.on('data', (data) => {
+        const text = data.toString()
+        output += text
+        console.log('shadcn stdout:', text)
+      })
 
-            if (!options.appRouter) {
-                args.splice(args.indexOf('--app'), 1)
-            }
+      process.stderr?.on('data', (data) => {
+        const text = data.toString()
+        errorOutput += text
+        console.log('shadcn stderr:', text)
+      })
 
-            console.log('Final args:', args)
-            console.log('Working directory:', parentDir)
-            console.log('Project name:', projectName)
-
-            const process = spawn('npx', args, {
-                stdio: 'pipe',
-                cwd: parentDir // Run in the parent directory
-            })
-
-            let output = ''
-            let errorOutput = ''
-
-            process.stdout?.on('data', (data) => {
-                const text = data.toString()
-                output += text
-                console.log('create-next-app stdout:', text)
-            })
-
-            process.stderr?.on('data', (data) => {
-                const text = data.toString()
-                errorOutput += text
-                console.log('create-next-app stderr:', text)
-            })
-
-            process.on('close', (code) => {
-                console.log('create-next-app process closed with code:', code)
-                console.log('Full output:', output)
-                if (errorOutput) {
-                    console.log('Error output:', errorOutput)
-                }
-
-                if (code === 0) {
-                    console.log('create-next-app completed successfully')
-                    resolve()
-                } else {
-                    console.error('create-next-app failed with code:', code)
-                    reject(new Error(`create-next-app failed with code ${code}. Output: ${output}. Error: ${errorOutput}`))
-                }
-            })
-
-            process.on('error', (error) => {
-                console.error('create-next-app process error:', error)
-                reject(error)
-            })
-
-            console.log('=== RUN CREATE NEXT APP DEBUG END ===')
-        })
-    }
-
-    private async setupShadcnUI(projectPath: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            console.log('Setting up shadcn/ui...')
-
-            // Use non-interactive mode with default answers
-            const process = spawn('npx', ['shadcn@latest', 'init', '-y', '--defaults'], {
-                stdio: 'pipe',
-                cwd: projectPath
-            })
-
-            let output = ''
-            let errorOutput = ''
-
-            process.stdout?.on('data', (data) => {
-                const text = data.toString()
-                output += text
-                console.log('shadcn stdout:', text)
-            })
-
-            process.stderr?.on('data', (data) => {
-                const text = data.toString()
-                errorOutput += text
-                console.log('shadcn stderr:', text)
-            })
-
-            process.on('close', (code) => {
-                console.log('shadcn process closed with code:', code)
-                console.log('shadcn output:', output)
-                if (errorOutput) {
-                    console.log('shadcn error:', errorOutput)
-                }
-
-                if (code === 0) {
-                    console.log('shadcn setup completed successfully')
-                    resolve()
-                } else {
-                    console.error('shadcn init failed with code:', code)
-                    reject(new Error(`shadcn init failed with code ${code}. Output: ${output}. Error: ${errorOutput}`))
-                }
-            })
-
-            process.on('error', (error) => {
-                console.error('shadcn process error:', error)
-                reject(error)
-            })
-        })
-    }
-
-    private async createProjectStructure(projectPath: string, options: any): Promise<void> {
-        const { typescript } = options
-
-        // Create production-ready directory structure
-        const dirs = [
-            'components/ui',
-            'components/custom',
-            'components/layout',
-            'components/forms',
-            'lib',
-            'types',
-            'hooks',
-            'utils',
-            'store',
-            'services',
-            'constants',
-            'config',
-            'styles',
-            'public/icons',
-            'public/images',
-            'public/assets'
-        ]
-
-        for (const dir of dirs) {
-            await fs.mkdir(path.join(projectPath, dir), { recursive: true })
+      process.on('close', (code) => {
+        console.log('shadcn process closed with code:', code)
+        console.log('shadcn output:', output)
+        if (errorOutput) {
+          console.log('shadcn error:', errorOutput)
         }
 
-        // Create utility files
-        if (typescript) {
-            await this.createUtilityFiles(projectPath)
+        if (code === 0) {
+          console.log('shadcn setup completed successfully')
+          resolve()
+        } else {
+          console.error('shadcn init failed with code:', code)
+          reject(new Error(`shadcn init failed with code ${code}. Output: ${output}. Error: ${errorOutput}`))
         }
+      })
+
+      process.on('error', (error) => {
+        console.error('shadcn process error:', error)
+        reject(error)
+      })
+    })
+  }
+
+  private async createProjectStructure(projectPath: string, options: any): Promise<void> {
+    const { typescript } = options
+
+    // Create production-ready directory structure
+    const dirs = [
+      'components/ui',
+      'components/custom',
+      'components/layout',
+      'components/forms',
+      'lib',
+      'types',
+      'hooks',
+      'utils',
+      'store',
+      'services',
+      'constants',
+      'config',
+      'styles',
+      'public/icons',
+      'public/images',
+      'public/assets'
+    ]
+
+    for (const dir of dirs) {
+      await fs.mkdir(path.join(projectPath, dir), { recursive: true })
     }
 
-    private async createUtilityFiles(projectPath: string): Promise<void> {
-        // Create lib/utils.ts
-        const utilsContent = `import { type ClassValue, clsx } from "clsx"
+    // Create utility files
+    if (typescript) {
+      await this.createUtilityFiles(projectPath)
+    }
+  }
+
+  private async createUtilityFiles(projectPath: string): Promise<void> {
+    // Create lib/utils.ts
+    const utilsContent = `import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -320,10 +325,10 @@ export function truncateText(text: string, maxLength: number): string {
   return text.slice(0, maxLength).trim() + '...'
 }
 `
-        await fs.writeFile(path.join(projectPath, 'lib/utils.ts'), utilsContent)
+    await fs.writeFile(path.join(projectPath, 'lib/utils.ts'), utilsContent)
 
-        // Create types/index.ts
-        const typesContent = `// Global type definitions
+    // Create types/index.ts
+    const typesContent = `// Global type definitions
 export interface ComponentProps {
   className?: string
   children?: React.ReactNode
@@ -369,10 +374,10 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   }
 }
 `
-        await fs.writeFile(path.join(projectPath, 'types/index.ts'), typesContent)
+    await fs.writeFile(path.join(projectPath, 'types/index.ts'), typesContent)
 
-        // Create hooks/useLocalStorage.ts
-        const useLocalStorageContent = `import { useState, useEffect } from 'react'
+    // Create hooks/useLocalStorage.ts
+    const useLocalStorageContent = `import { useState, useEffect } from 'react'
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -403,10 +408,10 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   return [storedValue, setValue] as const
 }
 `
-        await fs.writeFile(path.join(projectPath, 'hooks/useLocalStorage.ts'), useLocalStorageContent)
+    await fs.writeFile(path.join(projectPath, 'hooks/useLocalStorage.ts'), useLocalStorageContent)
 
-        // Create hooks/useDebounce.ts
-        const useDebounceContent = `import { useState, useEffect } from 'react'
+    // Create hooks/useDebounce.ts
+    const useDebounceContent = `import { useState, useEffect } from 'react'
 
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
@@ -424,10 +429,10 @@ export function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue
 }
 `
-        await fs.writeFile(path.join(projectPath, 'hooks/useDebounce.ts'), useDebounceContent)
+    await fs.writeFile(path.join(projectPath, 'hooks/useDebounce.ts'), useDebounceContent)
 
-        // Create constants/index.ts
-        const constantsContent = `// App constants
+    // Create constants/index.ts
+    const constantsContent = `// App constants
 export const APP_NAME = 'Nest Studio'
 export const APP_VERSION = '1.0.0'
 
@@ -461,10 +466,10 @@ export const BREAKPOINTS = {
   '2XL': '1536px',
 } as const
 `
-        await fs.writeFile(path.join(projectPath, 'constants/index.ts'), constantsContent)
+    await fs.writeFile(path.join(projectPath, 'constants/index.ts'), constantsContent)
 
-        // Create config/env.ts
-        const envContent = `// Environment configuration
+    // Create config/env.ts
+    const envContent = `// Environment configuration
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   IS_DEVELOPMENT: process.env.NODE_ENV === 'development',
@@ -476,10 +481,10 @@ export const isDevelopment = env.IS_DEVELOPMENT
 export const isProduction = env.IS_PRODUCTION
 export const isTest = env.IS_TEST
 `
-        await fs.writeFile(path.join(projectPath, 'config/env.ts'), envContent)
+    await fs.writeFile(path.join(projectPath, 'config/env.ts'), envContent)
 
-        // Create store/index.ts (basic store setup)
-        const storeContent = `// Basic store setup - can be extended with Redux, Zustand, etc.
+    // Create store/index.ts (basic store setup)
+    const storeContent = `// Basic store setup - can be extended with Redux, Zustand, etc.
 export interface StoreState {
   user: any | null
   theme: 'light' | 'dark' | 'system'
@@ -518,10 +523,10 @@ class Store {
 
 export const store = new Store()
 `
-        await fs.writeFile(path.join(projectPath, 'store/index.ts'), storeContent)
+    await fs.writeFile(path.join(projectPath, 'store/index.ts'), storeContent)
 
-        // Create services/api.ts
-        const apiContent = `// API service
+    // Create services/api.ts
+    const apiContent = `// API service
 import { ApiResponse, PaginatedResponse } from '@/types'
 
 class ApiService {
@@ -590,10 +595,10 @@ class ApiService {
 
 export const apiService = new ApiService()
 `
-        await fs.writeFile(path.join(projectPath, 'services/api.ts'), apiContent)
+    await fs.writeFile(path.join(projectPath, 'services/api.ts'), apiContent)
 
-        // Create components/ui/Button.tsx
-        const buttonContent = `import React from 'react'
+    // Create components/ui/Button.tsx
+    const buttonContent = `import React from 'react'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -633,10 +638,10 @@ Button.displayName = 'Button'
 
 export { Button }
 `
-        await fs.writeFile(path.join(projectPath, 'components/ui/Button.tsx'), buttonContent)
+    await fs.writeFile(path.join(projectPath, 'components/ui/Button.tsx'), buttonContent)
 
-        // Create .gitignore additions
-        const gitignoreContent = `
+    // Create .gitignore additions
+    const gitignoreContent = `
 # Environment variables
 .env
 .env.local
@@ -718,10 +723,10 @@ dist
 tmp/
 temp/
 `
-        await fs.appendFile(path.join(projectPath, '.gitignore'), gitignoreContent)
+    await fs.appendFile(path.join(projectPath, '.gitignore'), gitignoreContent)
 
-        // Create README.md
-        const readmeContent = `# ${path.basename(projectPath)}
+    // Create README.md
+    const readmeContent = `# ${path.basename(projectPath)}
 
 A modern Next.js application built with TypeScript, Tailwind CSS, and shadcn/ui.
 
@@ -815,102 +820,102 @@ This project is fully typed with TypeScript. Type definitions are organized in t
 
 This project is licensed under the MIT License.
 `
-        await fs.writeFile(path.join(projectPath, 'README.md'), readmeContent)
+    await fs.writeFile(path.join(projectPath, 'README.md'), readmeContent)
 
-        // Add additional dependencies to package.json
-        const packageJsonPath = path.join(projectPath, 'package.json')
-        try {
-            const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
+    // Add additional dependencies to package.json
+    const packageJsonPath = path.join(projectPath, 'package.json')
+    try {
+      const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
 
-            // Add additional dependencies
-            packageJson.dependencies = {
-                ...packageJson.dependencies,
-                'clsx': '^2.0.0',
-                'tailwind-merge': '^2.0.0',
-                'class-variance-authority': '^0.7.0',
-                'lucide-react': '^0.400.0'
-            }
+      // Add additional dependencies
+      packageJson.dependencies = {
+        ...packageJson.dependencies,
+        'clsx': '^2.0.0',
+        'tailwind-merge': '^2.0.0',
+        'class-variance-authority': '^0.7.0',
+        'lucide-react': '^0.400.0'
+      }
 
-            // Add additional dev dependencies
-            packageJson.devDependencies = {
-                ...packageJson.devDependencies,
-                '@types/node': '^20',
-                'autoprefixer': '^10.4.16',
-                'postcss': '^8.4.32'
-            }
+      // Add additional dev dependencies
+      packageJson.devDependencies = {
+        ...packageJson.devDependencies,
+        '@types/node': '^20',
+        'autoprefixer': '^10.4.16',
+        'postcss': '^8.4.32'
+      }
 
-            await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
-        } catch (error) {
-            console.error('Failed to update package.json:', error)
-        }
+      await fs.writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+    } catch (error) {
+      console.error('Failed to update package.json:', error)
+    }
+  }
+
+  private async generateProjectInfo(projectPath: string): Promise<ProjectInfo> {
+    return this.detectProject(projectPath)
+  }
+
+  private async isValidNextJSProject(projectPath: string): Promise<boolean> {
+    const packageJsonPath = path.join(projectPath, 'package.json')
+
+    if (!await this.fileExists(packageJsonPath)) {
+      return false
     }
 
-    private async generateProjectInfo(projectPath: string): Promise<ProjectInfo> {
-        return this.detectProject(projectPath)
+    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
+    return !!(packageJson.dependencies?.next || packageJson.devDependencies?.next)
+  }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath)
+      return true
+    } catch {
+      return false
     }
+  }
 
-    private async isValidNextJSProject(projectPath: string): Promise<boolean> {
-        const packageJsonPath = path.join(projectPath, 'package.json')
+  private extractNextJSVersion(dependencies: any): string {
+    const nextVersion = dependencies?.next || dependencies?.['next.js']
+    if (!nextVersion) return 'unknown'
 
-        if (!await this.fileExists(packageJsonPath)) {
-            return false
-        }
+    // Extract version number from version string
+    const match = nextVersion.match(/(\d+\.\d+\.\d+)/)
+    return match ? match[1] : nextVersion
+  }
 
-        const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'))
-        return !!(packageJson.dependencies?.next || packageJson.devDependencies?.next)
-    }
+  private hasTypeScript(packageJson: any): boolean {
+    return !!(packageJson.dependencies?.typescript || packageJson.devDependencies?.typescript)
+  }
 
-    private async fileExists(filePath: string): Promise<boolean> {
-        try {
-            await fs.access(filePath)
-            return true
-        } catch {
-            return false
-        }
-    }
+  private async hasAppRouter(projectPath: string): Promise<boolean> {
+    const appDir = path.join(projectPath, 'src/app')
+    const pagesDir = path.join(projectPath, 'src/pages')
 
-    private extractNextJSVersion(dependencies: any): string {
-        const nextVersion = dependencies?.next || dependencies?.['next.js']
-        if (!nextVersion) return 'unknown'
+    const appExists = await this.fileExists(appDir)
+    const pagesExists = await this.fileExists(pagesDir)
 
-        // Extract version number from version string
-        const match = nextVersion.match(/(\d+\.\d+\.\d+)/)
-        return match ? match[1] : nextVersion
-    }
+    return appExists && !pagesExists
+  }
 
-    private hasTypeScript(packageJson: any): boolean {
-        return !!(packageJson.dependencies?.typescript || packageJson.devDependencies?.typescript)
-    }
+  private hasTailwindCSS(packageJson: any): boolean {
+    return !!(packageJson.dependencies?.tailwindcss || packageJson.devDependencies?.tailwindcss)
+  }
 
-    private async hasAppRouter(projectPath: string): Promise<boolean> {
-        const appDir = path.join(projectPath, 'src/app')
-        const pagesDir = path.join(projectPath, 'src/pages')
+  private async hasShadcnUI(projectPath: string): Promise<boolean> {
+    const componentsJsonPath = path.join(projectPath, 'components.json')
+    const uiDir = path.join(projectPath, 'src/components/ui')
 
-        const appExists = await this.fileExists(appDir)
-        const pagesExists = await this.fileExists(pagesDir)
+    const hasConfig = await this.fileExists(componentsJsonPath)
+    const hasUIDir = await this.fileExists(uiDir)
 
-        return appExists && !pagesExists
-    }
+    return hasConfig && hasUIDir
+  }
 
-    private hasTailwindCSS(packageJson: any): boolean {
-        return !!(packageJson.dependencies?.tailwindcss || packageJson.devDependencies?.tailwindcss)
-    }
+  private hasESLint(packageJson: any): boolean {
+    return !!(packageJson.dependencies?.eslint || packageJson.devDependencies?.eslint)
+  }
 
-    private async hasShadcnUI(projectPath: string): Promise<boolean> {
-        const componentsJsonPath = path.join(projectPath, 'components.json')
-        const uiDir = path.join(projectPath, 'src/components/ui')
-
-        const hasConfig = await this.fileExists(componentsJsonPath)
-        const hasUIDir = await this.fileExists(uiDir)
-
-        return hasConfig && hasUIDir
-    }
-
-    private hasESLint(packageJson: any): boolean {
-        return !!(packageJson.dependencies?.eslint || packageJson.devDependencies?.eslint)
-    }
-
-    private hasPrettier(packageJson: any): boolean {
-        return !!(packageJson.dependencies?.prettier || packageJson.devDependencies?.prettier)
-    }
+  private hasPrettier(packageJson: any): boolean {
+    return !!(packageJson.dependencies?.prettier || packageJson.devDependencies?.prettier)
+  }
 }

@@ -24,7 +24,7 @@ interface PageEditorProps {
     onElementUpdate: (elementId: string, updates: Partial<PageElement>) => void
 }
 
-export function PageEditor({ file, onElementSelect, selectedElement, onElementUpdate }: PageEditorProps) {
+export function PageEditor({ file, onElementSelect, selectedElement }: PageEditorProps) {
     const [elements, setElements] = useState<PageElement[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -56,11 +56,17 @@ export function PageEditor({ file, onElementSelect, selectedElement, onElementUp
 
     const parsePageContent = async () => {
         try {
+            console.log('PageEditor: Parsing page content for:', file.path)
             // Parse the JSX/TSX content to extract elements
             const result = await window.electronAPI.codegen.parseFile(file.path)
+            console.log('PageEditor: Parse result:', result)
             if (result.success && result.ast) {
+                console.log('PageEditor: AST received:', result.ast)
                 const parsedElements = extractElementsFromAST(result.ast)
+                console.log('PageEditor: Parsed elements:', parsedElements)
                 setElements(parsedElements)
+            } else {
+                console.log('PageEditor: Parse failed or no AST:', result)
             }
         } catch (error) {
             console.error('Failed to parse page content:', error)
@@ -68,13 +74,15 @@ export function PageEditor({ file, onElementSelect, selectedElement, onElementUp
     }
 
     const extractElementsFromAST = (ast: any): PageElement[] => {
+        console.log('PageEditor: extractElementsFromAST called with AST:', ast)
         const elements: PageElement[] = []
         let elementId = 0
 
-        const traverse = (node: any): void => {
+        const traverse = (node: any, parentElement?: PageElement): void => {
             if (!node) return
 
             if (node.type === 'JSXElement') {
+                console.log('PageEditor: Found JSXElement:', node)
                 const element: PageElement = {
                     id: `element-${elementId++}`,
                     type: node.openingElement.name.name || 'div',
@@ -82,16 +90,11 @@ export function PageEditor({ file, onElementSelect, selectedElement, onElementUp
                     props: extractProps(node.openingElement.attributes),
                     children: [],
                     position: {
-                        x: Math.random() * 400 + 50, // Random position for now
-                        y: Math.random() * 300 + 50,
-                        width: 200,
-                        height: 50
+                        x: 0, // Will be positioned by CSS layout
+                        y: 0,
+                        width: 'auto',
+                        height: 'auto'
                     }
-                }
-
-                // Extract text content
-                if (node.children && node.children.length === 1 && node.children[0].type === 'JSXText') {
-                    element.content = node.children[0].value.trim()
                 }
 
                 // Extract className
@@ -102,23 +105,43 @@ export function PageEditor({ file, onElementSelect, selectedElement, onElementUp
                     element.className = classNameAttr.value.value || classNameAttr.value.expression?.value
                 }
 
-                // Process children
-                if (node.children) {
+                // Extract text content and process children
+                if (node.children && node.children.length > 0) {
+                    const textContent: string[] = []
+                    const childElements: PageElement[] = []
+
                     node.children.forEach((child: any) => {
-                        if (child.type === 'JSXElement') {
-                            traverse(child)
+                        if (child.type === 'JSXText') {
+                            const text = child.value.trim()
+                            if (text) {
+                                textContent.push(text)
+                            }
+                        } else if (child.type === 'JSXElement') {
+                            traverse(child, element)
                         }
                     })
+
+                    if (textContent.length > 0) {
+                        element.content = textContent.join(' ')
+                    }
                 }
 
-                elements.push(element)
+                // Add to parent's children or to root elements
+                if (parentElement) {
+                    parentElement.children.push(element)
+                } else {
+                    elements.push(element)
+                }
             }
         }
 
-        if (ast.body) {
-            ast.body.forEach((node: any) => {
+        // Access the program body correctly
+        const body = ast.program ? ast.program.body : ast.body
+
+        if (body) {
+            body.forEach((node: any) => {
                 if (node.type === 'ExportDefaultDeclaration' && node.declaration.type === 'ArrowFunctionExpression') {
-                    // Handle default export function
+                    // Handle default export arrow function
                     if (node.declaration.body && node.declaration.body.type === 'JSXElement') {
                         traverse(node.declaration.body)
                     }
@@ -169,6 +192,129 @@ export function PageEditor({ file, onElementSelect, selectedElement, onElementUp
         onElementSelect(element)
     }
 
+    const renderElement = (element: PageElement) => {
+        const { type, content, props, className } = element
+
+        // Create props object for the component
+        const componentProps = {
+            ...props,
+            className: className,
+            style: {
+                ...props.style
+            }
+        }
+
+        // Render different element types
+        switch (type) {
+            case 'div':
+                return <div {...componentProps}>{content || props.children}</div>
+            case 'h1':
+                return <h1 {...componentProps}>{content || props.children}</h1>
+            case 'h2':
+                return <h2 {...componentProps}>{content || props.children}</h2>
+            case 'h3':
+                return <h3 {...componentProps}>{content || props.children}</h3>
+            case 'p':
+                return <p {...componentProps}>{content || props.children}</p>
+            case 'span':
+                return <span {...componentProps}>{content || props.children}</span>
+            case 'button':
+                return <button {...componentProps}>{content || props.children || 'Button'}</button>
+            case 'img':
+                return <img {...componentProps} alt={props.alt || ''} src={props.src || ''} />
+            case 'a':
+                return <a {...componentProps} href={props.href || '#'}>{content || props.children}</a>
+            case 'main':
+                return <main {...componentProps}>{content || props.children}</main>
+            case 'footer':
+                return <footer {...componentProps}>{content || props.children}</footer>
+            case 'header':
+                return <header {...componentProps}>{content || props.children}</header>
+            case 'section':
+                return <section {...componentProps}>{content || props.children}</section>
+            case 'article':
+                return <article {...componentProps}>{content || props.children}</article>
+            case 'nav':
+                return <nav {...componentProps}>{content || props.children}</nav>
+            case 'ul':
+                return <ul {...componentProps}>{content || props.children}</ul>
+            case 'ol':
+                return <ol {...componentProps}>{content || props.children}</ol>
+            case 'li':
+                return <li {...componentProps}>{content || props.children}</li>
+            case 'code':
+                return <code {...componentProps}>{content || props.children}</code>
+            default:
+                return <div {...componentProps}>{content || props.children || `${type} element`}</div>
+        }
+    }
+
+    const renderElementWithChildren = (element: PageElement) => {
+        const { type, content, props, className, children } = element
+
+        // Create props object for the component
+        const componentProps = {
+            ...props,
+            className: className,
+            style: {
+                ...props.style
+            }
+        }
+
+        // Render children recursively
+        const renderedChildren = children && children.length > 0
+            ? children.map(child => (
+                <div key={child.id} className="relative">
+                    {renderElementWithChildren(child)}
+                </div>
+            ))
+            : null
+
+        // Render different element types with children
+        switch (type) {
+            case 'div':
+                return <div {...componentProps}>{renderedChildren || content}</div>
+            case 'h1':
+                return <h1 {...componentProps}>{renderedChildren || content}</h1>
+            case 'h2':
+                return <h2 {...componentProps}>{renderedChildren || content}</h2>
+            case 'h3':
+                return <h3 {...componentProps}>{renderedChildren || content}</h3>
+            case 'p':
+                return <p {...componentProps}>{renderedChildren || content}</p>
+            case 'span':
+                return <span {...componentProps}>{renderedChildren || content}</span>
+            case 'button':
+                return <button {...componentProps}>{renderedChildren || content || 'Button'}</button>
+            case 'img':
+                return <img {...componentProps} alt={props.alt || ''} src={props.src || ''} />
+            case 'a':
+                return <a {...componentProps} href={props.href || '#'}>{renderedChildren || content}</a>
+            case 'main':
+                return <main {...componentProps}>{renderedChildren || content}</main>
+            case 'footer':
+                return <footer {...componentProps}>{renderedChildren || content}</footer>
+            case 'header':
+                return <header {...componentProps}>{renderedChildren || content}</header>
+            case 'section':
+                return <section {...componentProps}>{renderedChildren || content}</section>
+            case 'article':
+                return <article {...componentProps}>{renderedChildren || content}</article>
+            case 'nav':
+                return <nav {...componentProps}>{renderedChildren || content}</nav>
+            case 'ul':
+                return <ul {...componentProps}>{renderedChildren || content}</ul>
+            case 'ol':
+                return <ol {...componentProps}>{renderedChildren || content}</ol>
+            case 'li':
+                return <li {...componentProps}>{renderedChildren || content}</li>
+            case 'code':
+                return <code {...componentProps}>{renderedChildren || content}</code>
+            default:
+                return <div {...componentProps}>{renderedChildren || content || `${type} element`}</div>
+        }
+    }
+
     // Element update handler is passed as prop
 
     if (loading) {
@@ -217,50 +363,31 @@ export function PageEditor({ file, onElementSelect, selectedElement, onElementUp
                         </svg>
                     </div>
 
-                    {/* Elements */}
-                    {elements.map(element => (
-                        <div
-                            key={element.id}
-                            className={`absolute border-2 cursor-pointer transition-all ${selectedElement?.id === element.id
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
-                                : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                                }`}
-                            style={{
-                                left: element.position.x,
-                                top: element.position.y,
-                                width: element.position.width,
-                                height: element.position.height,
-                                minHeight: '40px',
-                                minWidth: '100px'
-                            }}
-                            onClick={() => handleElementClick(element)}
-                        >
-                            {/* Element Content */}
-                            <div className="h-full w-full p-2 bg-white dark:bg-gray-800 rounded shadow-sm">
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                    {element.type}
-                                </div>
-                                <div className="text-sm">
-                                    {element.content || element.props.children || `${element.type} element`}
-                                </div>
-                                {element.className && (
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                        {element.className}
-                                    </div>
+                    {/* Render the page as a proper layout */}
+                    <div className="w-full h-full p-4">
+                        {elements.map(element => (
+                            <div
+                                key={element.id}
+                                className={`relative border-2 cursor-pointer transition-all ${selectedElement?.id === element.id
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
+                                    : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                                    }`}
+                                onClick={() => handleElementClick(element)}
+                            >
+                                {renderElementWithChildren(element)}
+
+                                {/* Resize Handles */}
+                                {selectedElement?.id === element.id && (
+                                    <>
+                                        <div className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-nw-resize"></div>
+                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-ne-resize"></div>
+                                        <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-sw-resize"></div>
+                                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-se-resize"></div>
+                                    </>
                                 )}
                             </div>
-
-                            {/* Resize Handles */}
-                            {selectedElement?.id === element.id && (
-                                <>
-                                    <div className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-nw-resize"></div>
-                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-ne-resize"></div>
-                                    <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-sw-resize"></div>
-                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-se-resize"></div>
-                                </>
-                            )}
-                        </div>
-                    ))}
+                        ))}
+                    </div>
 
                     {/* Empty State */}
                     {elements.length === 0 && (

@@ -91,11 +91,16 @@ class ProjectService {
         return projectInfo;
     }
     async detectProject(projectPath) {
+        console.log('ProjectService: detectProject called with path:', projectPath);
         const packageJsonPath = path.join(projectPath, 'package.json');
+        console.log('ProjectService: checking package.json at:', packageJsonPath);
         if (!await this.fileExists(packageJsonPath)) {
+            console.log('ProjectService: package.json not found');
             throw new Error('package.json not found');
         }
+        console.log('ProjectService: package.json found, reading...');
         const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
+        console.log('ProjectService: package.json contents:', packageJson);
         // Detect Next.js version
         const nextVersion = this.extractNextJSVersion(packageJson.dependencies);
         // Detect TypeScript

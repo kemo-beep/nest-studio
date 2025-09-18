@@ -23,8 +23,12 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
     const [activeTab, setActiveTab] = useState<'pages' | 'components'>('pages')
 
     useEffect(() => {
+        console.log('ProjectExplorer: project changed:', project)
         if (project?.path) {
+            console.log('ProjectExplorer: loading project structure for:', project.path)
             loadProjectStructure()
+        } else {
+            console.log('ProjectExplorer: no project path')
         }
     }, [project?.path])
 
@@ -46,22 +50,82 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
         }
     }
 
+    const handleCreatePage = async () => {
+        const pageName = prompt('Enter page name (e.g., "about" for about/page.tsx):')
+        if (!pageName || !pageName.trim()) return
+
+        const sanitizedName = pageName.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-')
+        const pageDir = `${project.path}/app/${sanitizedName}`
+        const pageFile = `${pageDir}/page.tsx`
+
+        try {
+            // Create directory
+            await window.electronAPI.fs.createDirectory(pageDir)
+
+            // Create page.tsx file
+            const pageContent = `export default function ${sanitizedName.charAt(0).toUpperCase() + sanitizedName.slice(1)}() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4">${sanitizedName.charAt(0).toUpperCase() + sanitizedName.slice(1)} Page</h1>
+      <p className="text-gray-600">This is the ${sanitizedName} page.</p>
+    </div>
+  )
+}
+`
+
+            await window.electronAPI.fs.writeFile(pageFile, pageContent)
+
+            // Reload pages
+            await loadPages()
+
+            // Select the new page
+            const newPage = pages.find(p => p.path === pageFile) || {
+                name: 'page.tsx',
+                path: pageFile,
+                type: 'page' as const,
+                isDirectory: false
+            }
+            onFileSelect(newPage)
+
+        } catch (error) {
+            console.error('Failed to create page:', error)
+            alert('Failed to create page. Please try again.')
+        }
+    }
+
     const loadPages = async () => {
         try {
+            console.log('loadPages: Starting with project path:', project.path)
             // Look for app directory (Next.js App Router)
             const appPath = `${project.path}/app`
             const srcAppPath = `${project.path}/src/app`
 
+            console.log('loadPages: Checking appPath:', appPath)
+            console.log('loadPages: Checking srcAppPath:', srcAppPath)
+
             let pagesPath = appPath
-            if (await isDirectory(srcAppPath)) {
+            const srcAppExists = await isDirectory(srcAppPath)
+            const appExists = await isDirectory(appPath)
+
+            console.log('loadPages: srcAppExists:', srcAppExists)
+            console.log('loadPages: appExists:', appExists)
+
+            if (srcAppExists) {
                 pagesPath = srcAppPath
-            } else if (!(await isDirectory(appPath))) {
+                console.log('loadPages: Using srcAppPath:', pagesPath)
+            } else if (appExists) {
+                pagesPath = appPath
+                console.log('loadPages: Using appPath:', pagesPath)
+            } else {
                 // No app directory found
+                console.log('loadPages: No app directory found')
                 setPages([])
                 return
             }
 
+            console.log('loadPages: Using pagesPath:', pagesPath)
             const pages = await findPageFiles(pagesPath, '')
+            console.log('loadPages: Found pages:', pages)
             setPages(pages)
         } catch (error) {
             console.error('Failed to load pages:', error)
@@ -97,7 +161,10 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
 
         try {
             const result = await window.electronAPI.fs.readDirectory(dirPath)
-            if (!result.success || !result.data) return pages
+
+            if (!result.success || !result.data) {
+                return pages
+            }
 
             for (const item of result.data) {
                 const fullPath = `${dirPath}/${item}`
@@ -212,9 +279,12 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
 
     const isDirectory = async (path: string): Promise<boolean> => {
         try {
+            console.log('isDirectory: Checking path:', path)
             const result = await window.electronAPI.fs.getFileStats(path)
+            console.log('isDirectory: Result for', path, ':', result)
             return result.success && result.data?.isDirectory
         } catch (error) {
+            console.error('isDirectory: Error checking if path is directory:', path, error)
             return false
         }
     }
@@ -328,8 +398,8 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
                 <button
                     onClick={() => setActiveTab('pages')}
                     className={`flex-1 px-4 py-2 text-sm font-medium ${activeTab === 'pages'
-                            ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         }`}
                 >
                     📄 Pages ({pages.length})
@@ -337,8 +407,8 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
                 <button
                     onClick={() => setActiveTab('components')}
                     className={`flex-1 px-4 py-2 text-sm font-medium ${activeTab === 'components'
-                            ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         }`}
                 >
                     🧩 Components ({components.length})
@@ -358,6 +428,14 @@ export function ProjectExplorer({ project, onFileSelect, selectedFile }: Project
                     <>
                         {activeTab === 'pages' && (
                             <div className="p-2">
+                                <div className="mb-3">
+                                    <button
+                                        onClick={handleCreatePage}
+                                        className="w-full px-3 py-2 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                                    >
+                                        + Create New Page
+                                    </button>
+                                </div>
                                 {pages.length > 0 ? (
                                     pages.map(page => (
                                         <div

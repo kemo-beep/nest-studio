@@ -43531,11 +43531,16 @@ var ProjectService = class {
     return projectInfo;
   }
   async detectProject(projectPath) {
+    console.log("ProjectService: detectProject called with path:", projectPath);
     const packageJsonPath = path.join(projectPath, "package.json");
+    console.log("ProjectService: checking package.json at:", packageJsonPath);
     if (!await this.fileExists(packageJsonPath)) {
+      console.log("ProjectService: package.json not found");
       throw new Error("package.json not found");
     }
+    console.log("ProjectService: package.json found, reading...");
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf-8"));
+    console.log("ProjectService: package.json contents:", packageJson);
     const nextVersion = this.extractNextJSVersion(packageJson.dependencies);
     const typescript = this.hasTypeScript(packageJson);
     const appRouter = await this.hasAppRouter(projectPath);
@@ -45943,9 +45948,12 @@ var NestStudioApp = class {
     });
     import_electron.ipcMain.handle("project:detect", async (_, projectPath) => {
       try {
+        console.log("Main process: project:detect called with path:", projectPath);
         const result = await this.projectService.detectProject(projectPath);
+        console.log("Main process: project detection result:", result);
         return { success: true, data: result };
       } catch (error) {
+        console.log("Main process: project detection error:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
     });
@@ -45957,9 +45965,39 @@ var NestStudioApp = class {
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
     });
+    import_electron.ipcMain.handle("fs:readDirectory", async (_, dirPath) => {
+      try {
+        console.log("Main process: fs:readDirectory called with path:", dirPath);
+        const items = await this.fileSystemService.readDirectory(dirPath);
+        console.log("Main process: readDirectory result:", items);
+        return { success: true, data: items };
+      } catch (error) {
+        console.log("Main process: readDirectory error:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+      }
+    });
     import_electron.ipcMain.handle("fs:writeFile", async (_, filePath, content) => {
       try {
         await this.fileSystemService.writeFile(filePath, content);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+      }
+    });
+    import_electron.ipcMain.handle("fs:getFileStats", async (_, filePath) => {
+      try {
+        console.log("Main process: fs:getFileStats called with path:", filePath);
+        const stats = await this.fileSystemService.getFileStats(filePath);
+        console.log("Main process: getFileStats result:", stats);
+        return { success: true, data: stats };
+      } catch (error) {
+        console.log("Main process: getFileStats error:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+      }
+    });
+    import_electron.ipcMain.handle("fs:createDirectory", async (_, dirPath) => {
+      try {
+        await this.fileSystemService.createDirectory(dirPath);
         return { success: true };
       } catch (error) {
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };

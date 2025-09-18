@@ -191,9 +191,12 @@ class NestStudioApp {
 
         ipcMain.handle('project:detect', async (_, projectPath) => {
             try {
+                console.log('Main process: project:detect called with path:', projectPath)
                 const result = await this.projectService.detectProject(projectPath)
+                console.log('Main process: project detection result:', result)
                 return { success: true, data: result }
             } catch (error) {
+                console.log('Main process: project detection error:', error)
                 return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
             }
         })
@@ -208,9 +211,42 @@ class NestStudioApp {
             }
         })
 
+        ipcMain.handle('fs:readDirectory', async (_, dirPath) => {
+            try {
+                console.log('Main process: fs:readDirectory called with path:', dirPath)
+                const items = await this.fileSystemService.readDirectory(dirPath)
+                console.log('Main process: readDirectory result:', items)
+                return { success: true, data: items }
+            } catch (error) {
+                console.log('Main process: readDirectory error:', error)
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+            }
+        })
+
         ipcMain.handle('fs:writeFile', async (_, filePath, content) => {
             try {
                 await this.fileSystemService.writeFile(filePath, content)
+                return { success: true }
+            } catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+            }
+        })
+
+        ipcMain.handle('fs:getFileStats', async (_, filePath) => {
+            try {
+                console.log('Main process: fs:getFileStats called with path:', filePath)
+                const stats = await this.fileSystemService.getFileStats(filePath)
+                console.log('Main process: getFileStats result:', stats)
+                return { success: true, data: stats }
+            } catch (error) {
+                console.log('Main process: getFileStats error:', error)
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+            }
+        })
+
+        ipcMain.handle('fs:createDirectory', async (_, dirPath) => {
+            try {
+                await this.fileSystemService.createDirectory(dirPath)
                 return { success: true }
             } catch (error) {
                 return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
