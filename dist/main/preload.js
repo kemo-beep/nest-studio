@@ -42,6 +42,7 @@ const electronAPI = {
         parseFile: (filePath) => electron_1.ipcRenderer.invoke('codegen:parseFile', filePath),
         generateJSX: (nodes) => electron_1.ipcRenderer.invoke('codegen:generateJSX', nodes),
         createComponentFile: (componentName, content, directory) => electron_1.ipcRenderer.invoke('codegen:createComponentFile', componentName, content, directory),
+        updateElement: (filePath, elementId, updates) => electron_1.ipcRenderer.invoke('codegen:updateElement', filePath, elementId, updates),
     },
     // Sync Service
     sync: {

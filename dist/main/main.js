@@ -339,6 +339,18 @@ class NestStudioApp {
                 return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
             }
         });
+        electron_1.ipcMain.handle('codegen:updateElement', async (_, filePath, elementId, updates) => {
+            try {
+                if (!this.codeGenerationService) {
+                    return { success: false, error: 'Code generation service not initialized' };
+                }
+                const result = await this.codeGenerationService.updateElement(filePath, elementId, updates);
+                return result;
+            }
+            catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+        });
         // Sync Service IPC handlers
         electron_1.ipcMain.handle('sync:start', async (_, projectPath) => {
             try {

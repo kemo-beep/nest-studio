@@ -43,8 +43,33 @@ export function NewLayout({ project }: NewLayoutProps) {
     const [selectedElement, setSelectedElement] = useState<PageElement | null>(null)
     const [devServerStatus, setDevServerStatus] = useState<'stopped' | 'starting' | 'running' | 'error'>('stopped')
     const [devServerError, setDevServerError] = useState<string | null>(null)
+    const [devServerUrl, setDevServerUrl] = useState<string | null>(null)
     const [showComponentLibrary, setShowComponentLibrary] = useState(true)
     const [showPreview, setShowPreview] = useState(false)
+
+    useEffect(() => {
+        if (project?.path) {
+            setDevServerStatus('starting')
+            window.electronAPI.devserver.start(project.path)
+                .then(status => {
+                    if (status.success) {
+                        setDevServerStatus('running')
+                        setDevServerUrl(status.data.url)
+                    } else {
+                        setDevServerStatus('error')
+                        setDevServerError(status.error)
+                    }
+                })
+                .catch(err => {
+                    setDevServerStatus('error')
+                    setDevServerError(err.message)
+                })
+        }
+
+        return () => {
+            window.electronAPI.devserver.stop()
+        }
+    }, [project?.path])
 
     // Auto-select the main page when project loads
     useEffect(() => {
@@ -91,9 +116,14 @@ export function NewLayout({ project }: NewLayoutProps) {
     }
 
     const handleElementUpdate = (elementId: string, updates: Partial<PageElement>) => {
-        // Update the element in the current file
-        // This would typically sync back to the file system
-        console.log('Element updated:', elementId, updates)
+        if (selectedFile) {
+            window.electronAPI.codegen.updateElement(selectedFile.path, elementId, updates)
+                .then(result => {
+                    if (!result.success) {
+                        console.error('Failed to update element:', result.error)
+                    }
+                })
+        }
     }
 
     const handleComponentSelect = (component: ShadcnComponent) => {
@@ -160,9 +190,11 @@ export function NewLayout({ project }: NewLayoutProps) {
                 <div className="flex-1 flex">
                     {/* Center - Canvas/Editor */}
                     <div className="flex-1 flex flex-col">
-                        {selectedFile ? (
+                        {selectedFile && devServerUrl ? (
                             <PageEditor
                                 file={selectedFile}
+                                projectPath={project.path}
+                                devServerUrl={devServerUrl}
                                 onElementSelect={handleElementSelect}
                                 selectedElement={selectedElement}
                                 onElementUpdate={handleElementUpdate}
@@ -202,6 +234,7 @@ export function NewLayout({ project }: NewLayoutProps) {
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-4/5 h-4/5 max-w-6xl">
                         <PreviewPanel
                             project={project}
+                            devServerUrl={devServerUrl}
                             devServerStatus={devServerStatus}
                             devServerError={devServerError}
                             onDevServerStatusChange={setDevServerStatus}

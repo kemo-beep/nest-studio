@@ -48,6 +48,7 @@ const electronAPI = {
         generateJSX: (nodes: any[]) => ipcRenderer.invoke('codegen:generateJSX', nodes),
         createComponentFile: (componentName: string, content: string, directory?: string) =>
             ipcRenderer.invoke('codegen:createComponentFile', componentName, content, directory),
+        updateElement: (filePath: string, elementId: string, updates: any) => ipcRenderer.invoke('codegen:updateElement', filePath, elementId, updates),
     },
 
     // Sync Service

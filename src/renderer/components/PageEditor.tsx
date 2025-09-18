@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ProjectFile } from './ProjectExplorer'
 
 interface PageElement {
@@ -7,315 +7,163 @@ interface PageElement {
     name: string
     props: Record<string, any>
     children: PageElement[]
-    position: {
-        x: number
-        y: number
-        width: number
-        height: number
-    }
     className?: string
     content?: string
 }
 
 interface PageEditorProps {
     file: ProjectFile
+    projectPath: string
+    devServerUrl: string
     onElementSelect: (element: PageElement) => void
     selectedElement?: PageElement | null
     onElementUpdate: (elementId: string, updates: Partial<PageElement>) => void
 }
 
-export function PageEditor({ file, onElementSelect, selectedElement }: PageEditorProps) {
-    const [elements, setElements] = useState<PageElement[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, selectedElement }: PageEditorProps) {
+    const [loading] = useState(false)
+    const [error] = useState<string | null>(null)
+    const iframeRef = useRef<HTMLIFrameElement>(null)
+
+    const getRelativePath = (absolutePath: string) => {
+        if (absolutePath.startsWith(projectPath)) {
+            return absolutePath.substring(projectPath.length)
+        }
+        return absolutePath
+    }
+
+    const getPageUrl = () => {
+        let relativePath = getRelativePath(file.path)
+
+        // Next.js specific path handling
+        if (relativePath.startsWith('/src/app')) {
+            relativePath = relativePath.substring('/src/app'.length)
+        } else if (relativePath.startsWith('/app')) {
+            relativePath = relativePath.substring('/app'.length)
+        }
+
+        if (relativePath.endsWith('/page.tsx')) {
+            relativePath = relativePath.substring(0, relativePath.length - '/page.tsx'.length)
+        }
+        if (relativePath.endsWith('/layout.tsx')) {
+            relativePath = relativePath.substring(0, relativePath.length - '/layout.tsx'.length)
+        }
+        if (relativePath === '') {
+            relativePath = '/'
+        }
+
+        return `${devServerUrl}${relativePath}`
+    }
 
     useEffect(() => {
-        if (file) {
-            loadPageContent()
-        }
-    }, [file])
+        const iframe = iframeRef.current
+        if (!iframe) return
 
-    const loadPageContent = async () => {
-        setLoading(true)
-        setError(null)
-
-        try {
-            const result = await window.electronAPI.fs.readFile(file.path)
-            if (result.success && result.data) {
-                await parsePageContent()
-            } else {
-                setError('Failed to load page content')
+        const handleMessage = (event: MessageEvent) => {
+            if (event.source !== iframe.contentWindow) {
+                return
             }
-        } catch (error) {
-            setError('Error loading page content')
-            console.error('Failed to load page content:', error)
-        } finally {
-            setLoading(false)
-        }
-    }
 
-    const parsePageContent = async () => {
-        try {
-            console.log('PageEditor: Parsing page content for:', file.path)
-            // Parse the JSX/TSX content to extract elements
-            const result = await window.electronAPI.codegen.parseFile(file.path)
-            console.log('PageEditor: Parse result:', result)
-            if (result.success && result.ast) {
-                console.log('PageEditor: AST received:', result.ast)
-                const parsedElements = extractElementsFromAST(result.ast)
-                console.log('PageEditor: Parsed elements:', parsedElements)
-                setElements(parsedElements)
-            } else {
-                console.log('PageEditor: Parse failed or no AST:', result)
+            const { type, payload } = event.data
+            if (type === 'element-selected') {
+                onElementSelect(payload)
             }
-        } catch (error) {
-            console.error('Failed to parse page content:', error)
         }
-    }
 
-    const extractElementsFromAST = (ast: any): PageElement[] => {
-        console.log('PageEditor: extractElementsFromAST called with AST:', ast)
-        const elements: PageElement[] = []
-        let elementId = 0
+        window.addEventListener('message', handleMessage)
 
-        const traverse = (node: any, parentElement?: PageElement): void => {
-            if (!node) return
+        return () => {
+            window.removeEventListener('message', handleMessage)
+        }
+    }, [onElementSelect])
 
-            if (node.type === 'JSXElement') {
-                console.log('PageEditor: Found JSXElement:', node)
-                const element: PageElement = {
-                    id: `element-${elementId++}`,
-                    type: node.openingElement.name.name || 'div',
-                    name: node.openingElement.name.name || 'div',
-                    props: extractProps(node.openingElement.attributes),
-                    children: [],
-                    position: {
-                        x: 0, // Will be positioned by CSS layout
-                        y: 0,
-                        width: 'auto',
-                        height: 'auto'
+    useEffect(() => {
+        const iframe = iframeRef.current
+        if (iframe && selectedElement) {
+            iframe.contentWindow?.postMessage({ type: 'highlight-element', payload: { id: selectedElement.id } }, '*')
+        }
+    }, [selectedElement])
+
+    const injectScript = () => {
+        const iframe = iframeRef.current
+        if (!iframe?.contentWindow) return
+
+        const script = iframe.contentWindow.document.createElement('script')
+        script.textContent = `
+            (function() {
+                let overlay = null;
+
+                function createOverlay() {
+                    const el = document.createElement('div');
+                    el.style.position = 'absolute';
+                    el.style.border = '2px solid #3b82f6';
+                    el.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                    el.style.pointerEvents = 'none';
+                    el.style.zIndex = '9999';
+                    el.style.transition = 'all 0.1s ease-in-out';
+                    document.body.appendChild(el);
+                    return el;
+                }
+
+                function getElementById(id) {
+                    return document.querySelector('[data-element-id="' + id + '"]');
+                }
+
+                function highlightElement(element) {
+                    if (!overlay) {
+                        overlay = createOverlay();
+                    }
+                    if (element) {
+                        const rect = element.getBoundingClientRect();
+                        overlay.style.width = rect.width + 'px';
+                        overlay.style.height = rect.height + 'px';
+                        overlay.style.top = rect.top + window.scrollY + 'px';
+                        overlay.style.left = rect.left + window.scrollX + 'px';
+                        overlay.style.display = 'block';
+                    } else {
+                        overlay.style.display = 'none';
                     }
                 }
 
-                // Extract className
-                const classNameAttr = node.openingElement.attributes.find(
-                    (attr: any) => attr.name && attr.name.name === 'className'
-                )
-                if (classNameAttr && classNameAttr.value) {
-                    element.className = classNameAttr.value.value || classNameAttr.value.expression?.value
-                }
+                document.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const element = e.target.closest('[data-element-id]');
+                    if (!element) return;
 
-                // Extract text content and process children
-                if (node.children && node.children.length > 0) {
-                    const textContent: string[] = []
-                    const childElements: PageElement[] = []
+                    const id = element.getAttribute('data-element-id');
+                    const props = {};
+                    for (const attr of element.attributes) {
+                        props[attr.name] = attr.value;
+                    }
 
-                    node.children.forEach((child: any) => {
-                        if (child.type === 'JSXText') {
-                            const text = child.value.trim()
-                            if (text) {
-                                textContent.push(text)
-                            }
-                        } else if (child.type === 'JSXElement') {
-                            traverse(child, element)
+                    window.parent.postMessage({
+                        type: 'element-selected',
+                        payload: {
+                            id: id,
+                            name: element.tagName.toLowerCase(),
+                            type: element.tagName.toLowerCase(),
+                            props: props,
+                            className: element.className,
+                            content: element.innerText,
                         }
-                    })
+                    }, '*');
+                    
+                    highlightElement(element);
+                }, true);
 
-                    if (textContent.length > 0) {
-                        element.content = textContent.join(' ')
+                window.addEventListener('message', (event) => {
+                    const { type, payload } = event.data;
+                    if (type === 'highlight-element') {
+                        const elementToHighlight = getElementById(payload.id);
+                        highlightElement(elementToHighlight);
                     }
-                }
-
-                // Add to parent's children or to root elements
-                if (parentElement) {
-                    parentElement.children.push(element)
-                } else {
-                    elements.push(element)
-                }
-            }
-        }
-
-        // Access the program body correctly
-        const body = ast.program ? ast.program.body : ast.body
-
-        if (body) {
-            body.forEach((node: any) => {
-                if (node.type === 'ExportDefaultDeclaration' && node.declaration.type === 'ArrowFunctionExpression') {
-                    // Handle default export arrow function
-                    if (node.declaration.body && node.declaration.body.type === 'JSXElement') {
-                        traverse(node.declaration.body)
-                    }
-                } else if (node.type === 'ExportDefaultDeclaration' && node.declaration.type === 'FunctionDeclaration') {
-                    // Handle default export function declaration
-                    if (node.declaration.body && node.declaration.body.body) {
-                        node.declaration.body.body.forEach((stmt: any) => {
-                            if (stmt.type === 'ReturnStatement' && stmt.argument && stmt.argument.type === 'JSXElement') {
-                                traverse(stmt.argument)
-                            }
-                        })
-                    }
-                }
-            })
-        }
-
-        return elements
+                });
+            })();
+        `
+        iframe.contentWindow.document.body.appendChild(script)
     }
-
-    const extractProps = (attributes: any[]): Record<string, any> => {
-        const props: Record<string, any> = {}
-
-        attributes.forEach(attr => {
-            if (attr.name && attr.name.name) {
-                const key = attr.name.name
-                let value: any = true
-
-                if (attr.value) {
-                    if (attr.value.type === 'Literal') {
-                        value = attr.value.value
-                    } else if (attr.value.type === 'JSXExpressionContainer') {
-                        if (attr.value.expression.type === 'Literal') {
-                            value = attr.value.expression.value
-                        } else if (attr.value.expression.type === 'BooleanLiteral') {
-                            value = attr.value.expression.value
-                        }
-                    }
-                }
-
-                props[key] = value
-            }
-        })
-
-        return props
-    }
-
-    const handleElementClick = (element: PageElement) => {
-        onElementSelect(element)
-    }
-
-    const renderElement = (element: PageElement) => {
-        const { type, content, props, className } = element
-
-        // Create props object for the component
-        const componentProps = {
-            ...props,
-            className: className,
-            style: {
-                ...props.style
-            }
-        }
-
-        // Render different element types
-        switch (type) {
-            case 'div':
-                return <div {...componentProps}>{content || props.children}</div>
-            case 'h1':
-                return <h1 {...componentProps}>{content || props.children}</h1>
-            case 'h2':
-                return <h2 {...componentProps}>{content || props.children}</h2>
-            case 'h3':
-                return <h3 {...componentProps}>{content || props.children}</h3>
-            case 'p':
-                return <p {...componentProps}>{content || props.children}</p>
-            case 'span':
-                return <span {...componentProps}>{content || props.children}</span>
-            case 'button':
-                return <button {...componentProps}>{content || props.children || 'Button'}</button>
-            case 'img':
-                return <img {...componentProps} alt={props.alt || ''} src={props.src || ''} />
-            case 'a':
-                return <a {...componentProps} href={props.href || '#'}>{content || props.children}</a>
-            case 'main':
-                return <main {...componentProps}>{content || props.children}</main>
-            case 'footer':
-                return <footer {...componentProps}>{content || props.children}</footer>
-            case 'header':
-                return <header {...componentProps}>{content || props.children}</header>
-            case 'section':
-                return <section {...componentProps}>{content || props.children}</section>
-            case 'article':
-                return <article {...componentProps}>{content || props.children}</article>
-            case 'nav':
-                return <nav {...componentProps}>{content || props.children}</nav>
-            case 'ul':
-                return <ul {...componentProps}>{content || props.children}</ul>
-            case 'ol':
-                return <ol {...componentProps}>{content || props.children}</ol>
-            case 'li':
-                return <li {...componentProps}>{content || props.children}</li>
-            case 'code':
-                return <code {...componentProps}>{content || props.children}</code>
-            default:
-                return <div {...componentProps}>{content || props.children || `${type} element`}</div>
-        }
-    }
-
-    const renderElementWithChildren = (element: PageElement) => {
-        const { type, content, props, className, children } = element
-
-        // Create props object for the component
-        const componentProps = {
-            ...props,
-            className: className,
-            style: {
-                ...props.style
-            }
-        }
-
-        // Render children recursively
-        const renderedChildren = children && children.length > 0
-            ? children.map(child => (
-                <div key={child.id} className="relative">
-                    {renderElementWithChildren(child)}
-                </div>
-            ))
-            : null
-
-        // Render different element types with children
-        switch (type) {
-            case 'div':
-                return <div {...componentProps}>{renderedChildren || content}</div>
-            case 'h1':
-                return <h1 {...componentProps}>{renderedChildren || content}</h1>
-            case 'h2':
-                return <h2 {...componentProps}>{renderedChildren || content}</h2>
-            case 'h3':
-                return <h3 {...componentProps}>{renderedChildren || content}</h3>
-            case 'p':
-                return <p {...componentProps}>{renderedChildren || content}</p>
-            case 'span':
-                return <span {...componentProps}>{renderedChildren || content}</span>
-            case 'button':
-                return <button {...componentProps}>{renderedChildren || content || 'Button'}</button>
-            case 'img':
-                return <img {...componentProps} alt={props.alt || ''} src={props.src || ''} />
-            case 'a':
-                return <a {...componentProps} href={props.href || '#'}>{renderedChildren || content}</a>
-            case 'main':
-                return <main {...componentProps}>{renderedChildren || content}</main>
-            case 'footer':
-                return <footer {...componentProps}>{renderedChildren || content}</footer>
-            case 'header':
-                return <header {...componentProps}>{renderedChildren || content}</header>
-            case 'section':
-                return <section {...componentProps}>{renderedChildren || content}</section>
-            case 'article':
-                return <article {...componentProps}>{renderedChildren || content}</article>
-            case 'nav':
-                return <nav {...componentProps}>{renderedChildren || content}</nav>
-            case 'ul':
-                return <ul {...componentProps}>{renderedChildren || content}</ul>
-            case 'ol':
-                return <ol {...componentProps}>{renderedChildren || content}</ol>
-            case 'li':
-                return <li {...componentProps}>{renderedChildren || content}</li>
-            case 'code':
-                return <code {...componentProps}>{renderedChildren || content}</code>
-            default:
-                return <div {...componentProps}>{renderedChildren || content || `${type} element`}</div>
-        }
-    }
-
-    // Element update handler is passed as prop
 
     if (loading) {
         return (
@@ -349,57 +197,15 @@ export function PageEditor({ file, onElementSelect, selectedElement }: PageEdito
             </div>
 
             {/* Canvas Area */}
-            <div className="flex-1 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gray-50 dark:bg-gray-900">
-                    {/* Grid Background */}
-                    <div className="absolute inset-0 opacity-20">
-                        <svg width="100%" height="100%">
-                            <defs>
-                                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="1" />
-                                </pattern>
-                            </defs>
-                            <rect width="100%" height="100%" fill="url(#grid)" />
-                        </svg>
-                    </div>
-
-                    {/* Render the page as a proper layout */}
-                    <div className="w-full h-full p-4">
-                        {elements.map(element => (
-                            <div
-                                key={element.id}
-                                className={`relative border-2 cursor-pointer transition-all ${selectedElement?.id === element.id
-                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
-                                    : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                                    }`}
-                                onClick={() => handleElementClick(element)}
-                            >
-                                {renderElementWithChildren(element)}
-
-                                {/* Resize Handles */}
-                                {selectedElement?.id === element.id && (
-                                    <>
-                                        <div className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-nw-resize"></div>
-                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-ne-resize"></div>
-                                        <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 rounded-full cursor-sw-resize"></div>
-                                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full cursor-se-resize"></div>
-                                    </>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Empty State */}
-                    {elements.length === 0 && (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="text-center text-gray-500 dark:text-gray-400">
-                                <div className="text-4xl mb-4">📄</div>
-                                <p>No elements found in this page</p>
-                                <p className="text-sm mt-2">Add components from the library to get started</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <div className="flex-1 relative overflow-hidden bg-gray-50 dark:bg-gray-900">
+                <iframe
+                    ref={iframeRef}
+                    src={getPageUrl()}
+                    className="w-full h-full border-0"
+                    title="Page Preview"
+                    sandbox="allow-scripts allow-same-origin"
+                    onLoad={injectScript}
+                />
             </div>
         </div>
     )
