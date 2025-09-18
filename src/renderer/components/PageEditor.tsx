@@ -94,6 +94,8 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
             const script = iframe.contentWindow.document.createElement('script')
             script.textContent = `
                 (function() {
+                    console.log('[InjectScript] Running...');
+
                     let idCounter = 0;
                     function injectIds(element) {
                         if (!element.hasAttribute('data-element-id')) {
@@ -104,6 +106,7 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
                         }
                     }
                     injectIds(document.body);
+                    console.log('[InjectScript] IDs injected.');
 
                     let overlay = null;
 
@@ -140,13 +143,19 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
                     }
 
                     document.addEventListener('click', (e) => {
+                        console.log('[InjectScript] Click event fired.');
                         e.preventDefault();
                         e.stopPropagation();
                         
                         const element = e.target.closest('[data-element-id]');
-                        if (!element) return;
+                        if (!element) {
+                            console.log('[InjectScript] No element with data-element-id found.');
+                            return;
+                        }
 
                         const id = element.getAttribute('data-element-id');
+                        console.log('[InjectScript] Element selected:', id);
+
                         const props = {};
                         for (const attr of element.attributes) {
                             props[attr.name] = attr.value;
@@ -177,7 +186,7 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
                 })();
             `
             iframe.contentWindow.document.body.appendChild(script)
-        }, 1000)
+        }, 2000)
     }
 
     if (loading) {
