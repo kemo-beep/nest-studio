@@ -64,6 +64,34 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
         return url
     }
 
+    // Function to clear highlight in iframe
+    const clearHighlight = () => {
+        const iframe = iframeRef.current
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'clear-highlight',
+                payload: {}
+            }, '*')
+        }
+    }
+
+    // Clear highlight when selectedElement changes
+    useEffect(() => {
+        if (selectedElement) {
+            // If we have a studio ID, highlight that element
+            const iframe = iframeRef.current
+            if (iframe?.contentWindow && selectedElement.id.startsWith('el-')) {
+                iframe.contentWindow.postMessage({
+                    type: 'highlight-element',
+                    payload: { elementId: selectedElement.id }
+                }, '*')
+            }
+        } else {
+            // Clear highlight if no element is selected
+            clearHighlight()
+        }
+    }, [selectedElement])
+
     useEffect(() => {
         const iframe = iframeRef.current
         if (!iframe) return
@@ -93,7 +121,7 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
                 console.log('[PageEditor] Element clicked in iframe:', payload)
                 // Convert the simple click data to our PageElement format
                 const element: PageElement = {
-                    id: `clicked-${Date.now()}`,
+                    id: payload.studioId || `clicked-${Date.now()}`,
                     type: payload.tagName.toLowerCase(),
                     name: payload.tagName.toLowerCase(),
                     props: {
@@ -111,6 +139,15 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
                 try {
                     onElementSelect(element)
                     console.log('[PageEditor] onElementSelect called successfully')
+
+                    // Store the selected element's studio ID for highlighting
+                    if (payload.studioId) {
+                        // Send highlight message to iframe
+                        iframe.contentWindow?.postMessage({
+                            type: 'highlight-element',
+                            payload: { elementId: payload.studioId }
+                        }, '*')
+                    }
                 } catch (error) {
                     console.error('[PageEditor] Error calling onElementSelect:', error)
                 }
