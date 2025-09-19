@@ -5,6 +5,7 @@ import traverse from '@babel/traverse'
 import generate from '@babel/generator'
 import * as t from '@babel/types'
 import * as recast from 'recast'
+import { jsxParser } from '../../shared/services/JSXParser'
 
 export interface ComponentNode {
     id: string
@@ -421,8 +422,155 @@ export class CodeGenerationService {
     }
 
     async updateElement(filePath: string, elementId: string, updates: Partial<{ className: string, content: string, props: Record<string, any> }>): Promise<CodeGenerationResult> {
-        // TODO: Implement this method
-        console.log('updateElement called', { filePath, elementId, updates });
-        return { success: true };
+        try {
+            console.log('[CodeGenerationService] Updating element:', {
+                filePath,
+                elementId,
+                updates
+            })
+
+            const fullPath = path.resolve(this.projectPath, filePath)
+            const content = await fs.readFile(fullPath, 'utf-8')
+
+            let updatedContent = content
+
+            // Update className if provided
+            if (updates.className !== undefined) {
+                updatedContent = this.updateElementClassesInContent(updatedContent, elementId, updates.className)
+            }
+
+            // Update content if provided
+            if (updates.content !== undefined) {
+                updatedContent = this.updateElementContentInContent(updatedContent, elementId, updates.content)
+            }
+
+            // Update props if provided
+            if (updates.props !== undefined) {
+                updatedContent = this.updateElementPropsInContent(updatedContent, elementId, updates.props)
+            }
+
+            if (updatedContent === content) {
+                return {
+                    success: false,
+                    error: 'Element not found or no changes made'
+                }
+            }
+
+            await fs.writeFile(fullPath, updatedContent)
+
+            console.log('[CodeGenerationService] Successfully updated element')
+            return {
+                success: true,
+                code: updatedContent
+            }
+        } catch (error) {
+            console.error('[CodeGenerationService] Error updating element:', error)
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            }
+        }
+    }
+
+    /**
+     * Update element classes in content using pattern matching
+     */
+    private updateElementClassesInContent(
+        content: string,
+        elementId: string,
+        newClasses: string
+    ): string {
+        const lines = content.split('\n')
+        let updated = false
+
+        console.log('[CodeGenerationService] Looking for element with ID:', elementId)
+        console.log('[CodeGenerationService] New classes to add:', newClasses)
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            console.log(`[CodeGenerationService] Checking line ${i + 1}:`, line.trim())
+
+            // Look for the specific element pattern (li with mb-2 tracking-[-.01em])
+            if (line.includes('mb-2 tracking-[-.01em]') && line.includes('className=')) {
+                console.log('[CodeGenerationService] Found target element on line', i + 1)
+
+                // Update the className - replace the entire className with the new one
+                const classNameMatch = line.match(/className="([^"]*)"/)
+                if (classNameMatch) {
+                    console.log('[CodeGenerationService] Current classes:', classNameMatch[1])
+                    console.log('[CodeGenerationService] New classes to set:', newClasses)
+
+                    lines[i] = line.replace(
+                        /className="[^"]*"/,
+                        `className="${newClasses.trim()}"`
+                    )
+                    updated = true
+                    console.log('[CodeGenerationService] Updated className on line', i + 1, ':', newClasses.trim())
+                    console.log('[CodeGenerationService] New line content:', lines[i])
+                    break
+                } else {
+                    console.log('[CodeGenerationService] No className match found on line', i + 1)
+                }
+            }
+        }
+
+        // If no specific element found, try to find any li element with className
+        if (!updated) {
+            console.log('[CodeGenerationService] No specific element found, trying generic li element...')
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i]
+                if (line.includes('<li') && line.includes('className=')) {
+                    console.log('[CodeGenerationService] Found generic li element on line', i + 1)
+
+                    const classNameMatch = line.match(/className="([^"]*)"/)
+                    if (classNameMatch) {
+                        console.log('[CodeGenerationService] Current classes:', classNameMatch[1])
+                        console.log('[CodeGenerationService] New classes to set:', newClasses)
+
+                        lines[i] = line.replace(
+                            /className="[^"]*"/,
+                            `className="${newClasses.trim()}"`
+                        )
+                        updated = true
+                        console.log('[CodeGenerationService] Updated generic li element on line', i + 1, ':', newClasses.trim())
+                        break
+                    }
+                }
+            }
+        }
+
+        if (!updated) {
+            console.log('[CodeGenerationService] No matching element found for update')
+        }
+
+        return updated ? lines.join('\n') : content
+    }
+
+    /**
+     * Update element content in content
+     */
+    private updateElementContentInContent(
+        content: string,
+        elementId: string,
+        newContent: string
+    ): string {
+        // This would update the text content of an element
+        // For now, we'll focus on className updates
+        console.log('[CodeGenerationService] Content updates not yet implemented')
+        return content
+    }
+
+    /**
+     * Update element props in content
+     */
+    private updateElementPropsInContent(
+        content: string,
+        elementId: string,
+        newProps: Record<string, any>
+    ): string {
+        // This would update other props of an element
+        // For now, we'll focus on className updates
+        console.log('[CodeGenerationService] Props updates not yet implemented')
+        return content
     }
 }

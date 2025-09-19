@@ -7,6 +7,10 @@ interface TailwindClassEditorProps {
 }
 
 export function TailwindClassEditor({ className, onClassNameChange }: TailwindClassEditorProps) {
+    console.log('[TailwindClassEditor] Component rendered with:', { className, onClassNameChange: !!onClassNameChange })
+
+    // Visual test - removed alert
+
     const [parsedClasses, setParsedClasses] = useState<ParsedClasses | null>(null)
     const [isEditing, setIsEditing] = useState(false)
     const [editValue, setEditValue] = useState(className)
@@ -28,6 +32,21 @@ export function TailwindClassEditor({ className, onClassNameChange }: TailwindCl
     const handleSave = () => {
         onClassNameChange(editValue)
         setIsEditing(false)
+    }
+
+    const handleQuickAdd = (suggestion: string) => {
+        console.log('[TailwindClassEditor] Quick add button clicked:', suggestion)
+        console.log('[TailwindClassEditor] Current className:', className)
+        console.log('[TailwindClassEditor] onClassNameChange function:', onClassNameChange)
+
+        const newClasses = className ? `${className} ${suggestion}` : suggestion
+        console.log('[TailwindClassEditor] New classes will be:', newClasses)
+
+        // Add visual feedback
+        alert(`Adding class: ${suggestion}\nNew classes: ${newClasses}`)
+
+        onClassNameChange(newClasses)
+        console.log('[TailwindClassEditor] onClassNameChange called with:', newClasses)
     }
 
     const handleCancel = () => {
@@ -167,18 +186,21 @@ export function TailwindClassEditor({ className, onClassNameChange }: TailwindCl
                     Quick Add
                 </h5>
                 <div className="flex flex-wrap gap-1">
-                    {['text-sm', 'text-center', 'font-bold', 'p-4', 'bg-blue-500', 'rounded-lg', 'shadow-md'].map(suggestion => (
-                        <button
-                            key={suggestion}
-                            onClick={() => {
-                                const newClasses = className ? `${className} ${suggestion}` : suggestion
-                                onClassNameChange(newClasses)
-                            }}
-                            className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-500"
-                        >
-                            + {suggestion}
-                        </button>
-                    ))}
+                    {['text-sm', 'text-center', 'font-bold', 'p-4', 'bg-blue-500', 'rounded-lg', 'shadow-md'].map(suggestion => {
+                        console.log('[TailwindClassEditor] Rendering button for:', suggestion)
+                        return (
+                            <button
+                                key={suggestion}
+                                onClick={() => {
+                                    console.log('[TailwindClassEditor] Button clicked:', suggestion)
+                                    handleQuickAdd(suggestion)
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-500"
+                            >
+                                + {suggestion}
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
         </div>

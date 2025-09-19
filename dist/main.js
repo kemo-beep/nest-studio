@@ -31803,7 +31803,7 @@ var require_resolve_uri_umd = __commonJS({
         }
         url.path = path6;
       }
-      function resolve(input, base) {
+      function resolve2(input, base) {
         if (!input && !base)
           return "";
         const url = parseUrl(input);
@@ -31856,7 +31856,7 @@ var require_resolve_uri_umd = __commonJS({
             return url.scheme + "//" + url.user + url.host + url.port + url.path + queryHash;
         }
       }
-      return resolve;
+      return resolve2;
     }));
   }
 });
@@ -32201,8 +32201,8 @@ var require_trace_mapping_umd = __commonJS({
           this.sources = sources;
           this.sourcesContent = sourcesContent;
           this.ignoreList = parsed.ignoreList || parsed.x_google_ignoreList || void 0;
-          const resolve = resolver(mapUrl, sourceRoot);
-          this.resolvedSources = sources.map(resolve);
+          const resolve2 = resolver(mapUrl, sourceRoot);
+          this.resolvedSources = sources.map(resolve2);
           const { mappings } = parsed;
           if (typeof mappings === "string") {
             this._encoded = mappings;
@@ -41866,7 +41866,7 @@ var require_introspection = __commonJS({
     exports2.isStatic = isStatic;
     exports2.matchesPattern = matchesPattern;
     exports2.referencesImport = referencesImport;
-    exports2.resolve = resolve;
+    exports2.resolve = resolve2;
     exports2.willIMaybeExecuteBefore = willIMaybeExecuteBefore;
     var _t = require_lib4();
     var {
@@ -42128,7 +42128,7 @@ var require_introspection = __commonJS({
       nodeMap.set(target.node, result);
       return result;
     }
-    function resolve(dangerous, resolved) {
+    function resolve2(dangerous, resolved) {
       return _resolve.call(this, dangerous, resolved) || this;
     }
     function _resolve(dangerous, resolved) {
@@ -43564,7 +43564,7 @@ var ProjectService = class {
     };
   }
   async runCreateNextApp(projectPath, options) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       console.log("=== RUN CREATE NEXT APP DEBUG START ===");
       console.log("Project path:", projectPath);
       console.log("Options:", options);
@@ -43623,7 +43623,7 @@ var ProjectService = class {
         }
         if (code === 0) {
           console.log("create-next-app completed successfully");
-          resolve();
+          resolve2();
         } else {
           console.error("create-next-app failed with code:", code);
           reject(new Error(`create-next-app failed with code ${code}. Output: ${output}. Error: ${errorOutput}`));
@@ -43637,7 +43637,7 @@ var ProjectService = class {
     });
   }
   async setupShadcnUI(projectPath) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve2, reject) => {
       console.log("Setting up shadcn/ui...");
       const process2 = (0, import_child_process.spawn)("npx", ["shadcn@latest", "init", "-y", "--defaults"], {
         stdio: "pipe",
@@ -43663,7 +43663,7 @@ var ProjectService = class {
         }
         if (code === 0) {
           console.log("shadcn setup completed successfully");
-          resolve();
+          resolve2();
         } else {
           console.error("shadcn init failed with code:", code);
           reject(new Error(`shadcn init failed with code ${code}. Output: ${output}. Error: ${errorOutput}`));
@@ -44477,7 +44477,7 @@ var DevServerService = class extends import_events2.EventEmitter {
       }
       const port = await this.findAvailablePort();
       console.log(`Starting dev server on port ${port} for project: ${projectPath}`);
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve2, reject) => {
         this.process = (0, import_child_process2.spawn)("npx", ["next", "dev", "--port", port.toString()], {
           cwd: projectPath,
           stdio: ["pipe", "pipe", "pipe"]
@@ -44512,7 +44512,7 @@ var DevServerService = class extends import_events2.EventEmitter {
                 pid: this.process?.pid
               };
               this.emit("started", this.status);
-              resolve(this.status);
+              resolve2(this.status);
             }
           }
         });
@@ -44530,12 +44530,12 @@ var DevServerService = class extends import_events2.EventEmitter {
   }
   async stop() {
     if (this.process && this.status.isRunning) {
-      return new Promise((resolve) => {
+      return new Promise((resolve2) => {
         this.process.on("exit", () => {
           this.status = { isRunning: false };
           this.process = null;
           this.emit("stopped");
-          resolve();
+          resolve2();
         });
         this.process.kill("SIGTERM");
         setTimeout(() => {
@@ -44560,21 +44560,21 @@ var DevServerService = class extends import_events2.EventEmitter {
     throw new Error("No available ports found");
   }
   async isPortAvailable(port) {
-    return new Promise((resolve) => {
+    return new Promise((resolve2) => {
       const server = (0, import_net.createServer)();
       server.listen(port, () => {
         server.close(() => {
-          resolve(true);
+          resolve2(true);
         });
       });
       server.on("error", () => {
-        resolve(false);
+        resolve2(false);
       });
     });
   }
   async restart(projectPath) {
     await this.stop();
-    await new Promise((resolve) => setTimeout(resolve, 1e3));
+    await new Promise((resolve2) => setTimeout(resolve2, 1e3));
     return this.start(projectPath);
   }
   isRunning() {
@@ -44895,8 +44895,113 @@ ${jsxElements.map((el) => `  ${el}`).join("\n")}
     openingElement.attributes = [...filteredAttributes, ...newAttributes];
   }
   async updateElement(filePath, elementId, updates) {
-    console.log("updateElement called", { filePath, elementId, updates });
-    return { success: true };
+    try {
+      console.log("[CodeGenerationService] Updating element:", {
+        filePath,
+        elementId,
+        updates
+      });
+      const fullPath = path3.resolve(this.projectPath, filePath);
+      const content = await fs3.readFile(fullPath, "utf-8");
+      let updatedContent = content;
+      if (updates.className !== void 0) {
+        updatedContent = this.updateElementClassesInContent(updatedContent, elementId, updates.className);
+      }
+      if (updates.content !== void 0) {
+        updatedContent = this.updateElementContentInContent(updatedContent, elementId, updates.content);
+      }
+      if (updates.props !== void 0) {
+        updatedContent = this.updateElementPropsInContent(updatedContent, elementId, updates.props);
+      }
+      if (updatedContent === content) {
+        return {
+          success: false,
+          error: "Element not found or no changes made"
+        };
+      }
+      await fs3.writeFile(fullPath, updatedContent);
+      console.log("[CodeGenerationService] Successfully updated element");
+      return {
+        success: true,
+        code: updatedContent
+      };
+    } catch (error) {
+      console.error("[CodeGenerationService] Error updating element:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error"
+      };
+    }
+  }
+  /**
+   * Update element classes in content using pattern matching
+   */
+  updateElementClassesInContent(content, elementId, newClasses) {
+    const lines = content.split("\n");
+    let updated = false;
+    console.log("[CodeGenerationService] Looking for element with ID:", elementId);
+    console.log("[CodeGenerationService] New classes to add:", newClasses);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      console.log(`[CodeGenerationService] Checking line ${i + 1}:`, line.trim());
+      if (line.includes("mb-2 tracking-[-.01em]") && line.includes("className=")) {
+        console.log("[CodeGenerationService] Found target element on line", i + 1);
+        const classNameMatch = line.match(/className="([^"]*)"/);
+        if (classNameMatch) {
+          console.log("[CodeGenerationService] Current classes:", classNameMatch[1]);
+          console.log("[CodeGenerationService] New classes to set:", newClasses);
+          lines[i] = line.replace(
+            /className="[^"]*"/,
+            `className="${newClasses.trim()}"`
+          );
+          updated = true;
+          console.log("[CodeGenerationService] Updated className on line", i + 1, ":", newClasses.trim());
+          console.log("[CodeGenerationService] New line content:", lines[i]);
+          break;
+        } else {
+          console.log("[CodeGenerationService] No className match found on line", i + 1);
+        }
+      }
+    }
+    if (!updated) {
+      console.log("[CodeGenerationService] No specific element found, trying generic li element...");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.includes("<li") && line.includes("className=")) {
+          console.log("[CodeGenerationService] Found generic li element on line", i + 1);
+          const classNameMatch = line.match(/className="([^"]*)"/);
+          if (classNameMatch) {
+            console.log("[CodeGenerationService] Current classes:", classNameMatch[1]);
+            console.log("[CodeGenerationService] New classes to set:", newClasses);
+            lines[i] = line.replace(
+              /className="[^"]*"/,
+              `className="${newClasses.trim()}"`
+            );
+            updated = true;
+            console.log("[CodeGenerationService] Updated generic li element on line", i + 1, ":", newClasses.trim());
+            break;
+          }
+        }
+      }
+    }
+    if (!updated) {
+      console.log("[CodeGenerationService] No matching element found for update");
+    }
+    return updated ? lines.join("\n") : content;
+  }
+  /**
+   * Update element content in content
+   */
+  updateElementContentInContent(content, elementId, newContent) {
+    console.log("[CodeGenerationService] Content updates not yet implemented");
+    return content;
+  }
+  /**
+   * Update element props in content
+   */
+  updateElementPropsInContent(content, elementId, newProps) {
+    console.log("[CodeGenerationService] Props updates not yet implemented");
+    return content;
   }
 };
 
@@ -45982,12 +46087,16 @@ var NestStudioApp = class {
     });
     import_electron.ipcMain.handle("project:detect", async (_, projectPath) => {
       try {
-        console.log("Main process: project:detect called with path:", projectPath);
+        console.log("\u{1F680} [Main] project:detect called with path:", projectPath);
         const result = await this.projectService.detectProject(projectPath);
-        console.log("Main process: project detection result:", result);
+        console.log("\u{1F680} [Main] project detection result:", result);
+        console.log("\u{1F680} [Main] Initializing CodeGenerationService...");
+        this.codeGenerationService = new CodeGenerationService(projectPath);
+        console.log("\u{1F680} [Main] CodeGenerationService initialized for project:", projectPath);
+        console.log("\u{1F680} [Main] CodeGenerationService instance:", this.codeGenerationService);
         return { success: true, data: result };
       } catch (error) {
-        console.log("Main process: project detection error:", error);
+        console.log("\u{1F680} [Main] project detection error:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
     });
@@ -46131,12 +46240,17 @@ var NestStudioApp = class {
     });
     import_electron.ipcMain.handle("codegen:updateElement", async (_, filePath, elementId, updates) => {
       try {
+        console.log("[Main] codegen:updateElement called with:", { filePath, elementId, updates });
         if (!this.codeGenerationService) {
+          console.log("[Main] Code generation service not initialized");
           return { success: false, error: "Code generation service not initialized" };
         }
+        console.log("[Main] Calling codeGenerationService.updateElement...");
         const result = await this.codeGenerationService.updateElement(filePath, elementId, updates);
+        console.log("[Main] CodeGenerationService result:", result);
         return result;
       } catch (error) {
+        console.error("[Main] Error in codegen:updateElement:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
     });

@@ -31,6 +31,17 @@ export function PropertiesPanel({ selectedElement, onElementUpdate }: Properties
     console.log('PropertiesPanel: selectedElement type:', typeof selectedElement)
     console.log('PropertiesPanel: selectedElement is null?', selectedElement === null)
     console.log('PropertiesPanel: selectedElement is undefined?', selectedElement === undefined)
+    console.log('PropertiesPanel: activeTab is:', activeTab)
+
+    // Test console
+    console.log('🔍 CONSOLE TEST - PropertiesPanel is rendering!')
+    console.error('🚨 ERROR TEST - This should show in red!')
+    console.warn('⚠️ WARNING TEST - This should show in yellow!')
+
+    // Test alert - removed
+    if (selectedElement) {
+        console.log('🎯 ELEMENT SELECTED - PropertiesPanel should show!')
+    }
 
     const handlePropChange = (propName: string, propValue: any) => {
         if (selectedElement && onElementUpdate) {
@@ -42,8 +53,24 @@ export function PropertiesPanel({ selectedElement, onElementUpdate }: Properties
     }
 
     const handleClassNameChange = (newClassName: string) => {
+        console.log('[PropertiesPanel] handleClassNameChange called:', {
+            newClassName,
+            selectedElement: selectedElement?.id,
+            hasOnElementUpdate: !!onElementUpdate
+        })
+
+        // Add visual feedback
+        alert(`PropertiesPanel: Updating className to: ${newClassName}`)
+
         if (selectedElement && onElementUpdate) {
+            console.log('[PropertiesPanel] Calling onElementUpdate with:', {
+                elementId: selectedElement.id,
+                updates: { className: newClassName }
+            })
             onElementUpdate(selectedElement.id, { className: newClassName })
+        } else {
+            console.log('[PropertiesPanel] Cannot update - missing selectedElement or onElementUpdate')
+            alert('ERROR: Missing selectedElement or onElementUpdate!')
         }
     }
 
@@ -103,6 +130,10 @@ export function PropertiesPanel({ selectedElement, onElementUpdate }: Properties
                         {activeTab === 'styles' && (
                             <div className="space-y-6">
                                 {/* Tailwind Classes */}
+                                {console.log('[PropertiesPanel] Rendering TailwindClassEditor with:', {
+                                    className: selectedElement.className || '',
+                                    onClassNameChange: !!handleClassNameChange
+                                })}
                                 <TailwindClassEditor
                                     className={selectedElement.className || ''}
                                     onClassNameChange={handleClassNameChange}

@@ -123,12 +123,31 @@ export function NewLayout({ project }: NewLayoutProps) {
 
     const handleElementUpdate = (elementId: string, updates: Partial<PageElement>) => {
         if (selectedFile) {
+            console.log('NewLayout: Updating element:', { elementId, updates, filePath: selectedFile.path })
+            console.log('NewLayout: Selected element:', selectedElement)
+
+            // Update the file through the codegen service first
             window.electronAPI.codegen.updateElement(selectedFile.path, elementId, updates)
                 .then(result => {
-                    if (!result.success) {
+                    console.log('NewLayout: Codegen result:', result)
+                    if (result.success) {
+                        console.log('NewLayout: Successfully updated element in file')
+
+                        // Update the local selectedElement state after successful file update
+                        if (selectedElement && selectedElement.id === elementId) {
+                            const updatedElement = { ...selectedElement, ...updates }
+                            setSelectedElement(updatedElement)
+                            console.log('NewLayout: Updated selectedElement with:', updates)
+                        }
+                    } else {
                         console.error('Failed to update element:', result.error)
                     }
                 })
+                .catch(error => {
+                    console.error('Error updating element:', error)
+                })
+        } else {
+            console.log('NewLayout: No selected file, cannot update element')
         }
     }
 

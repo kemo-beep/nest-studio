@@ -33,30 +33,73 @@ function App() {
                 if (recentProject) {
                     const project = JSON.parse(recentProject)
                     console.log('Parsed project:', project)
-                    // For now, just set the project without verification
-                    // TODO: Add file existence check when fileExists is implemented
-                    setCurrentProject(project)
+
+                    // Call project detection to initialize CodeGenerationService even for cached projects
+                    console.log('Calling project:detect for cached project:', project.path)
+                    try {
+                        const response = await window.electronAPI.project.detect(project.path)
+                        if (response.success) {
+                            console.log('Project detection successful for cached project:', response.data)
+                            setCurrentProject(response.data)
+                            localStorage.setItem('nest-studio-recent-project', JSON.stringify(response.data))
+                        } else {
+                            console.error('Project detection failed for cached project:', response.error)
+                            setCurrentProject(project)
+                        }
+                    } catch (error) {
+                        console.error('Error calling project:detect for cached project:', error)
+                        setCurrentProject(project)
+                    }
                 } else {
                     console.log('No recent project found in localStorage')
                     // Force load the appy project for testing
                     const appyProjectPath = '/Users/wonder/Documents/experimental/projecrs/appy'
                     console.log('Force loading appy project:', appyProjectPath)
 
-                    // Create a basic project object without detection for now
-                    const project = {
-                        name: 'appy',
-                        path: appyProjectPath,
-                        nextjsVersion: '15.5.3',
-                        typescript: true,
-                        appRouter: true,
-                        tailwind: true,
-                        shadcn: false,
-                        eslint: true,
-                        prettier: false
+                    // Call project detection to initialize CodeGenerationService
+                    console.log('Calling project:detect for appy project...')
+                    try {
+                        const response = await window.electronAPI.project.detect(appyProjectPath)
+                        if (response.success) {
+                            console.log('Project detection successful:', response.data)
+                            setCurrentProject(response.data)
+                            localStorage.setItem('nest-studio-recent-project', JSON.stringify(response.data))
+                        } else {
+                            console.error('Project detection failed:', response.error)
+                            // Fallback to basic project object
+                            const project = {
+                                name: 'appy',
+                                path: appyProjectPath,
+                                nextjsVersion: '15.5.3',
+                                typescript: true,
+                                appRouter: true,
+                                tailwind: true,
+                                shadcn: false,
+                                eslint: true,
+                                prettier: false
+                            }
+                            console.log('Using fallback project:', project)
+                            setCurrentProject(project)
+                            localStorage.setItem('nest-studio-recent-project', JSON.stringify(project))
+                        }
+                    } catch (error) {
+                        console.error('Error calling project:detect:', error)
+                        // Fallback to basic project object
+                        const project = {
+                            name: 'appy',
+                            path: appyProjectPath,
+                            nextjsVersion: '15.5.3',
+                            typescript: true,
+                            appRouter: true,
+                            tailwind: true,
+                            shadcn: false,
+                            eslint: true,
+                            prettier: false
+                        }
+                        console.log('Using fallback project after error:', project)
+                        setCurrentProject(project)
+                        localStorage.setItem('nest-studio-recent-project', JSON.stringify(project))
                     }
-                    console.log('Force loaded project:', project)
-                    setCurrentProject(project)
-                    localStorage.setItem('nest-studio-recent-project', JSON.stringify(project))
                 }
             } catch (err) {
                 console.error('Failed to initialize app:', err)

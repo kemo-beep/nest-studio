@@ -191,12 +191,19 @@ class NestStudioApp {
 
         ipcMain.handle('project:detect', async (_, projectPath) => {
             try {
-                console.log('Main process: project:detect called with path:', projectPath)
+                console.log('🚀 [Main] project:detect called with path:', projectPath)
                 const result = await this.projectService.detectProject(projectPath)
-                console.log('Main process: project detection result:', result)
+                console.log('🚀 [Main] project detection result:', result)
+
+                // Initialize CodeGenerationService when project is detected
+                console.log('🚀 [Main] Initializing CodeGenerationService...')
+                this.codeGenerationService = new CodeGenerationService(projectPath)
+                console.log('🚀 [Main] CodeGenerationService initialized for project:', projectPath)
+                console.log('🚀 [Main] CodeGenerationService instance:', this.codeGenerationService)
+
                 return { success: true, data: result }
             } catch (error) {
-                console.log('Main process: project detection error:', error)
+                console.log('🚀 [Main] project detection error:', error)
                 return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
             }
         })
@@ -365,12 +372,17 @@ class NestStudioApp {
 
         ipcMain.handle('codegen:updateElement', async (_, filePath, elementId, updates) => {
             try {
+                console.log('[Main] codegen:updateElement called with:', { filePath, elementId, updates })
                 if (!this.codeGenerationService) {
+                    console.log('[Main] Code generation service not initialized')
                     return { success: false, error: 'Code generation service not initialized' }
                 }
+                console.log('[Main] Calling codeGenerationService.updateElement...')
                 const result = await this.codeGenerationService.updateElement(filePath, elementId, updates)
+                console.log('[Main] CodeGenerationService result:', result)
                 return result
             } catch (error) {
+                console.error('[Main] Error in codegen:updateElement:', error)
                 return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
             }
         })

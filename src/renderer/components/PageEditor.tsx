@@ -92,6 +92,50 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
         }
     }, [selectedElement])
 
+    // Update element in iframe when selectedElement changes
+    useEffect(() => {
+        if (selectedElement && selectedElement.id.startsWith('el-')) {
+            const iframe = iframeRef.current
+            if (iframe?.contentWindow) {
+                // Send class updates
+                if (selectedElement.className !== undefined) {
+                    console.log('[PageEditor] Sending class update to iframe:', {
+                        elementId: selectedElement.id,
+                        classes: selectedElement.className
+                    })
+                    iframe.contentWindow.postMessage({
+                        type: 'update-element-classes',
+                        payload: {
+                            elementId: selectedElement.id,
+                            classes: selectedElement.className
+                        }
+                    }, '*')
+                }
+
+                // Send style updates
+                if (selectedElement.props) {
+                    const styles = {}
+                    Object.entries(selectedElement.props).forEach(([key, value]) => {
+                        if (key.startsWith('style_') && value) {
+                            const styleProperty = key.replace('style_', '').replace(/([A-Z])/g, '-$1').toLowerCase()
+                            styles[styleProperty] = value
+                        }
+                    })
+
+                    if (Object.keys(styles).length > 0) {
+                        iframe.contentWindow.postMessage({
+                            type: 'update-element-styles',
+                            payload: {
+                                elementId: selectedElement.id,
+                                styles: styles
+                            }
+                        }, '*')
+                    }
+                }
+            }
+        }
+    }, [selectedElement?.className, selectedElement?.props])
+
     useEffect(() => {
         const iframe = iframeRef.current
         if (!iframe) return
@@ -508,6 +552,24 @@ export function PageEditor({ file, projectPath, devServerUrl, onElementSelect, s
                         className="mt-2 px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
                     >
                         Test Iframe Access
+                    </button>
+                    <button
+                        onClick={() => {
+                            const iframe = iframeRef.current
+                            if (iframe?.contentWindow && selectedElement) {
+                                console.log('[PageEditor] Testing class update with selected element:', selectedElement)
+                                iframe.contentWindow.postMessage({
+                                    type: 'update-element-classes',
+                                    payload: {
+                                        elementId: selectedElement.id,
+                                        classes: 'bg-red-500 text-white p-4'
+                                    }
+                                }, '*')
+                            }
+                        }}
+                        className="mt-2 px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                    >
+                        Test Class Update
                     </button>
                 </div>
             </div>
