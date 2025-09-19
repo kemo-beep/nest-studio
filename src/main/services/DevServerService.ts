@@ -129,7 +129,7 @@ export class DevServerService extends EventEmitter {
     private async findAvailablePort(): Promise<number> {
         // Start from port 3000 to avoid conflict with Nest Studio (port 5000)
         const startPort = 3000
-        const maxPort = 3010
+        const maxPort = 3100
 
         for (let port = startPort; port <= maxPort; port++) {
             if (await this.isPortAvailable(port)) {

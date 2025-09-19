@@ -44551,7 +44551,7 @@ var DevServerService = class extends import_events2.EventEmitter {
   }
   async findAvailablePort() {
     const startPort = 3e3;
-    const maxPort = 3010;
+    const maxPort = 3100;
     for (let port = startPort; port <= maxPort; port++) {
       if (await this.isPortAvailable(port)) {
         return port;

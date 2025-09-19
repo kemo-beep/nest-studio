@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { TailwindClassesEditor } from './TailwindClassesEditor'
+import { TailwindClassEditor } from './TailwindClassEditor'
 
 interface PageElement {
     id: string
@@ -103,15 +103,10 @@ export function PropertiesPanel({ selectedElement, onElementUpdate }: Properties
                         {activeTab === 'styles' && (
                             <div className="space-y-6">
                                 {/* Tailwind Classes */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Tailwind Classes
-                                    </label>
-                                    <TailwindClassesEditor
-                                        value={selectedElement.className || ''}
-                                        onChange={handleClassNameChange}
-                                    />
-                                </div>
+                                <TailwindClassEditor
+                                    className={selectedElement.className || ''}
+                                    onClassNameChange={handleClassNameChange}
+                                />
 
                                 {/* Layout & Box Model */}
                                 <div>
