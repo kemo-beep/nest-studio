@@ -75,18 +75,18 @@ class NestStudioApp {
 
         // Load the app
         if (isDev) {
-            // Try port 5000 first, then 5001 if 5000 is busy
+            // Try port 5001 first, then 5002 if 5001 is busy (5000 is reserved for Next.js projects)
             const tryLoadDev = async () => {
                 try {
-                    console.log('Trying to load development URL: http://localhost:5000')
-                    await mainWindow!.loadURL('http://localhost:5000')
-                    console.log('Successfully loaded from port 5000')
+                    console.log('Trying to load development URL: http://localhost:5001')
+                    await mainWindow!.loadURL('http://localhost:5001')
+                    console.log('Successfully loaded from port 5001')
                     mainWindow!.show() // Show the window after loading
                 } catch (error) {
                     try {
-                        console.log('Port 5000 failed, trying port 5001...')
-                        await mainWindow!.loadURL('http://localhost:5001')
-                        console.log('Successfully loaded from port 5001')
+                        console.log('Port 5001 failed, trying port 5002...')
+                        await mainWindow!.loadURL('http://localhost:5002')
+                        console.log('Successfully loaded from port 5002')
                         mainWindow!.show() // Show the window after loading
                     } catch (error2) {
                         console.error('Failed to load from both ports:', error2)

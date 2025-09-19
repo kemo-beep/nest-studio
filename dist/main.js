@@ -44257,21 +44257,27 @@ This project is licensed under the MIT License.
     return !!(packageJson.dependencies?.typescript || packageJson.devDependencies?.typescript);
   }
   async hasAppRouter(projectPath) {
-    const appDir = path.join(projectPath, "src/app");
-    const pagesDir = path.join(projectPath, "src/pages");
+    const srcAppDir = path.join(projectPath, "src/app");
+    const appDir = path.join(projectPath, "app");
+    const srcPagesDir = path.join(projectPath, "src/pages");
+    const pagesDir = path.join(projectPath, "pages");
+    const srcAppExists = await this.fileExists(srcAppDir);
     const appExists = await this.fileExists(appDir);
+    const srcPagesExists = await this.fileExists(srcPagesDir);
     const pagesExists = await this.fileExists(pagesDir);
-    return appExists && !pagesExists;
+    return (srcAppExists || appExists) && !srcPagesExists && !pagesExists;
   }
   hasTailwindCSS(packageJson) {
     return !!(packageJson.dependencies?.tailwindcss || packageJson.devDependencies?.tailwindcss);
   }
   async hasShadcnUI(projectPath) {
     const componentsJsonPath = path.join(projectPath, "components.json");
-    const uiDir = path.join(projectPath, "src/components/ui");
+    const srcUiDir = path.join(projectPath, "src/components/ui");
+    const uiDir = path.join(projectPath, "components/ui");
     const hasConfig = await this.fileExists(componentsJsonPath);
+    const hasSrcUIDir = await this.fileExists(srcUiDir);
     const hasUIDir = await this.fileExists(uiDir);
-    return hasConfig && hasUIDir;
+    return hasConfig && (hasSrcUIDir || hasUIDir);
   }
   hasESLint(packageJson) {
     return !!(packageJson.dependencies?.eslint || packageJson.devDependencies?.eslint);
@@ -44451,6 +44457,7 @@ var FileSystemService = class extends import_events.EventEmitter {
 // src/main/services/DevServerService.ts
 var import_child_process2 = require("child_process");
 var import_events2 = require("events");
+var import_net = require("net");
 var DevServerService = class extends import_events2.EventEmitter {
   process = null;
   status = { isRunning: false };
@@ -44458,9 +44465,19 @@ var DevServerService = class extends import_events2.EventEmitter {
     if (this.status.isRunning) {
       return this.status;
     }
-    return new Promise((resolve, reject) => {
-      try {
-        const port = this.findAvailablePort();
+    try {
+      const fs5 = require("fs");
+      const path6 = require("path");
+      if (!fs5.existsSync(projectPath)) {
+        throw new Error(`Project path does not exist: ${projectPath}`);
+      }
+      const packageJsonPath = path6.join(projectPath, "package.json");
+      if (!fs5.existsSync(packageJsonPath)) {
+        throw new Error(`No package.json found in project path: ${projectPath}`);
+      }
+      const port = await this.findAvailablePort();
+      console.log(`Starting dev server on port ${port} for project: ${projectPath}`);
+      return new Promise((resolve, reject) => {
         this.process = (0, import_child_process2.spawn)("npx", ["next", "dev", "--port", port.toString()], {
           cwd: projectPath,
           stdio: ["pipe", "pipe", "pipe"]
@@ -44504,10 +44521,12 @@ var DevServerService = class extends import_events2.EventEmitter {
           console.error("Dev server error:", error);
           this.emit("error", new Error(error));
         });
-      } catch (error) {
-        reject(error);
-      }
-    });
+      });
+    } catch (error) {
+      console.error("Failed to start dev server:", error);
+      this.status = { isRunning: false, error: error instanceof Error ? error.message : String(error) };
+      throw error;
+    }
   }
   async stop() {
     if (this.process && this.status.isRunning) {
@@ -44530,17 +44549,28 @@ var DevServerService = class extends import_events2.EventEmitter {
   getStatus() {
     return { ...this.status };
   }
-  findAvailablePort() {
-    let port = 5002;
-    const maxPort = 5010;
-    while (port <= maxPort) {
-      try {
+  async findAvailablePort() {
+    const startPort = 3e3;
+    const maxPort = 3010;
+    for (let port = startPort; port <= maxPort; port++) {
+      if (await this.isPortAvailable(port)) {
         return port;
-      } catch {
-        port++;
       }
     }
     throw new Error("No available ports found");
+  }
+  async isPortAvailable(port) {
+    return new Promise((resolve) => {
+      const server = (0, import_net.createServer)();
+      server.listen(port, () => {
+        server.close(() => {
+          resolve(true);
+        });
+      });
+      server.on("error", () => {
+        resolve(false);
+      });
+    });
   }
   async restart(projectPath) {
     await this.stop();
@@ -45865,15 +45895,15 @@ var NestStudioApp = class {
     if (isDev) {
       const tryLoadDev = async () => {
         try {
-          console.log("Trying to load development URL: http://localhost:5000");
-          await mainWindow.loadURL("http://localhost:5000");
-          console.log("Successfully loaded from port 5000");
+          console.log("Trying to load development URL: http://localhost:5001");
+          await mainWindow.loadURL("http://localhost:5001");
+          console.log("Successfully loaded from port 5001");
           mainWindow.show();
         } catch (error) {
           try {
-            console.log("Port 5000 failed, trying port 5001...");
-            await mainWindow.loadURL("http://localhost:5001");
-            console.log("Successfully loaded from port 5001");
+            console.log("Port 5001 failed, trying port 5002...");
+            await mainWindow.loadURL("http://localhost:5002");
+            console.log("Successfully loaded from port 5002");
             mainWindow.show();
           } catch (error2) {
             console.error("Failed to load from both ports:", error2);

@@ -844,21 +844,29 @@ This project is licensed under the MIT License.
         return !!(packageJson.dependencies?.typescript || packageJson.devDependencies?.typescript);
     }
     async hasAppRouter(projectPath) {
-        const appDir = path.join(projectPath, 'src/app');
-        const pagesDir = path.join(projectPath, 'src/pages');
+        // Check for App Router in both possible locations
+        const srcAppDir = path.join(projectPath, 'src/app');
+        const appDir = path.join(projectPath, 'app');
+        const srcPagesDir = path.join(projectPath, 'src/pages');
+        const pagesDir = path.join(projectPath, 'pages');
+        const srcAppExists = await this.fileExists(srcAppDir);
         const appExists = await this.fileExists(appDir);
+        const srcPagesExists = await this.fileExists(srcPagesDir);
         const pagesExists = await this.fileExists(pagesDir);
-        return appExists && !pagesExists;
+        // App Router exists if either app directory exists and no pages directory exists
+        return (srcAppExists || appExists) && !srcPagesExists && !pagesExists;
     }
     hasTailwindCSS(packageJson) {
         return !!(packageJson.dependencies?.tailwindcss || packageJson.devDependencies?.tailwindcss);
     }
     async hasShadcnUI(projectPath) {
         const componentsJsonPath = path.join(projectPath, 'components.json');
-        const uiDir = path.join(projectPath, 'src/components/ui');
+        const srcUiDir = path.join(projectPath, 'src/components/ui');
+        const uiDir = path.join(projectPath, 'components/ui');
         const hasConfig = await this.fileExists(componentsJsonPath);
+        const hasSrcUIDir = await this.fileExists(srcUiDir);
         const hasUIDir = await this.fileExists(uiDir);
-        return hasConfig && hasUIDir;
+        return hasConfig && (hasSrcUIDir || hasUIDir);
     }
     hasESLint(packageJson) {
         return !!(packageJson.dependencies?.eslint || packageJson.devDependencies?.eslint);

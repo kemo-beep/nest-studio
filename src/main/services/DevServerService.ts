@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
+import { createServer } from 'net'
 
 export interface DevServerStatus {
     isRunning: boolean
@@ -18,11 +19,25 @@ export class DevServerService extends EventEmitter {
             return this.status
         }
 
-        return new Promise((resolve, reject) => {
-            try {
-                // Find available port
-                const port = this.findAvailablePort()
+        try {
+            // Check if project path exists and has package.json
+            const fs = require('fs')
+            const path = require('path')
 
+            if (!fs.existsSync(projectPath)) {
+                throw new Error(`Project path does not exist: ${projectPath}`)
+            }
+
+            const packageJsonPath = path.join(projectPath, 'package.json')
+            if (!fs.existsSync(packageJsonPath)) {
+                throw new Error(`No package.json found in project path: ${projectPath}`)
+            }
+
+            // Find available port
+            const port = await this.findAvailablePort()
+            console.log(`Starting dev server on port ${port} for project: ${projectPath}`)
+
+            return new Promise((resolve, reject) => {
                 // Start Next.js dev server with specific port
                 this.process = spawn('npx', ['next', 'dev', '--port', port.toString()], {
                     cwd: projectPath,
@@ -77,11 +92,12 @@ export class DevServerService extends EventEmitter {
                     console.error('Dev server error:', error)
                     this.emit('error', new Error(error))
                 })
-
-            } catch (error) {
-                reject(error)
-            }
-        })
+            })
+        } catch (error) {
+            console.error('Failed to start dev server:', error)
+            this.status = { isRunning: false, error: error instanceof Error ? error.message : String(error) }
+            throw error
+        }
     }
 
     async stop(): Promise<void> {
@@ -110,21 +126,34 @@ export class DevServerService extends EventEmitter {
         return { ...this.status }
     }
 
-    private findAvailablePort(): number {
-        // Start from port 5002 to avoid conflict with Nest Studio (port 5000)
-        let port = 5002
-        const maxPort = 5010
+    private async findAvailablePort(): Promise<number> {
+        // Start from port 3000 to avoid conflict with Nest Studio (port 5000)
+        const startPort = 3000
+        const maxPort = 3010
 
-        while (port <= maxPort) {
-            try {
-                // This is a simplified check - in production you'd want to actually test the port
+        for (let port = startPort; port <= maxPort; port++) {
+            if (await this.isPortAvailable(port)) {
                 return port
-            } catch {
-                port++
             }
         }
 
         throw new Error('No available ports found')
+    }
+
+    private async isPortAvailable(port: number): Promise<boolean> {
+        return new Promise((resolve) => {
+            const server = createServer()
+
+            server.listen(port, () => {
+                server.close(() => {
+                    resolve(true)
+                })
+            })
+
+            server.on('error', () => {
+                resolve(false)
+            })
+        })
     }
 
     async restart(projectPath: string): Promise<DevServerStatus> {

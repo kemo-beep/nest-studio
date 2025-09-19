@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ProjectInfo } from '@/shared/types'
 import { TailwindClassesEditor } from './TailwindClassesEditor'
 
 interface PageElement {
@@ -20,13 +19,18 @@ interface PageElement {
 }
 
 interface PropertiesPanelProps {
-    project: ProjectInfo
     selectedElement?: PageElement | null
     onElementUpdate?: (elementId: string, updates: Partial<PageElement>) => void
 }
 
 export function PropertiesPanel({ selectedElement, onElementUpdate }: PropertiesPanelProps) {
     const [activeTab, setActiveTab] = useState<'styles' | 'props' | 'computed'>('styles')
+
+    // Debug logging
+    console.log('PropertiesPanel: selectedElement received:', selectedElement)
+    console.log('PropertiesPanel: selectedElement type:', typeof selectedElement)
+    console.log('PropertiesPanel: selectedElement is null?', selectedElement === null)
+    console.log('PropertiesPanel: selectedElement is undefined?', selectedElement === undefined)
 
     const handlePropChange = (propName: string, propValue: any) => {
         if (selectedElement && onElementUpdate) {

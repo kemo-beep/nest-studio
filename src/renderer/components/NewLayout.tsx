@@ -114,7 +114,11 @@ export function NewLayout({ project }: NewLayoutProps) {
 
     const handleElementSelect = (element: PageElement) => {
         console.log('NewLayout: Element selected:', element)
+        console.log('NewLayout: Element props:', element.props)
+        console.log('NewLayout: Element className:', element.className)
+        console.log('NewLayout: Setting selectedElement state...')
         setSelectedElement(element)
+        console.log('NewLayout: selectedElement state updated')
     }
 
     const handleElementUpdate = (elementId: string, updates: Partial<PageElement>) => {
@@ -215,7 +219,6 @@ export function NewLayout({ project }: NewLayoutProps) {
                     {/* Right Sidebar - Properties Panel */}
                     <div className="w-80 flex-shrink-0">
                         <PropertiesPanel
-                            project={project}
                             selectedElement={selectedElement}
                             onElementUpdate={handleElementUpdate}
                         />

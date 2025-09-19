@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DevServerService = void 0;
 const child_process_1 = require("child_process");
 const events_1 = require("events");
+const net_1 = require("net");
 class DevServerService extends events_1.EventEmitter {
     constructor() {
         super(...arguments);
@@ -13,10 +14,21 @@ class DevServerService extends events_1.EventEmitter {
         if (this.status.isRunning) {
             return this.status;
         }
-        return new Promise((resolve, reject) => {
-            try {
-                // Find available port
-                const port = this.findAvailablePort();
+        try {
+            // Check if project path exists and has package.json
+            const fs = require('fs');
+            const path = require('path');
+            if (!fs.existsSync(projectPath)) {
+                throw new Error(`Project path does not exist: ${projectPath}`);
+            }
+            const packageJsonPath = path.join(projectPath, 'package.json');
+            if (!fs.existsSync(packageJsonPath)) {
+                throw new Error(`No package.json found in project path: ${projectPath}`);
+            }
+            // Find available port
+            const port = await this.findAvailablePort();
+            console.log(`Starting dev server on port ${port} for project: ${projectPath}`);
+            return new Promise((resolve, reject) => {
                 // Start Next.js dev server with specific port
                 this.process = (0, child_process_1.spawn)('npx', ['next', 'dev', '--port', port.toString()], {
                     cwd: projectPath,
@@ -63,11 +75,13 @@ class DevServerService extends events_1.EventEmitter {
                     console.error('Dev server error:', error);
                     this.emit('error', new Error(error));
                 });
-            }
-            catch (error) {
-                reject(error);
-            }
-        });
+            });
+        }
+        catch (error) {
+            console.error('Failed to start dev server:', error);
+            this.status = { isRunning: false, error: error instanceof Error ? error.message : String(error) };
+            throw error;
+        }
     }
     async stop() {
         if (this.process && this.status.isRunning) {
@@ -91,20 +105,29 @@ class DevServerService extends events_1.EventEmitter {
     getStatus() {
         return { ...this.status };
     }
-    findAvailablePort() {
-        // Start from port 5002 to avoid conflict with Nest Studio (port 5000)
-        let port = 5002;
-        const maxPort = 5010;
-        while (port <= maxPort) {
-            try {
-                // This is a simplified check - in production you'd want to actually test the port
+    async findAvailablePort() {
+        // Start from port 3000 to avoid conflict with Nest Studio (port 5000)
+        const startPort = 3000;
+        const maxPort = 3010;
+        for (let port = startPort; port <= maxPort; port++) {
+            if (await this.isPortAvailable(port)) {
                 return port;
-            }
-            catch {
-                port++;
             }
         }
         throw new Error('No available ports found');
+    }
+    async isPortAvailable(port) {
+        return new Promise((resolve) => {
+            const server = (0, net_1.createServer)();
+            server.listen(port, () => {
+                server.close(() => {
+                    resolve(true);
+                });
+            });
+            server.on('error', () => {
+                resolve(false);
+            });
+        });
     }
     async restart(projectPath) {
         await this.stop();
