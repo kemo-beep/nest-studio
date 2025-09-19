@@ -1035,6 +1035,10 @@ body {
   max-height: 90vh;
 }
 
+.min-h-0 {
+  min-height: 0px;
+}
+
 .w-1 {
   width: 0.25rem;
 }

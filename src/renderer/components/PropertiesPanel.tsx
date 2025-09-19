@@ -54,7 +54,7 @@ export function PropertiesPanel({ selectedElement, onElementUpdate }: Properties
     }
 
     return (
-        <div className="h-full flex flex-col bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
+        <div className="h-screen flex flex-col bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
             {/* Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Properties</h2>
@@ -92,7 +92,7 @@ export function PropertiesPanel({ selectedElement, onElementUpdate }: Properties
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
                 {selectedElement ? (
                     <div className="space-y-6">
                         <div>
